@@ -1,0 +1,19 @@
+{
+  "name": "pipeline",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "all": "bash src/run-all.sh",
+    "extras": "bash src/00-download-extras.sh",
+    "gpkg": "bash src/01-osm-to-gpkg.sh",
+    "extract": "bash src/02-extract-layers.sh",
+    "curated": "node src/03-curated.mjs",
+    "shape": "bash src/04-shape.sh",
+    "terrain": "bash src/05-terrain.sh",
+    "manifest": "node src/06-manifest.mjs"
+  },
+  "dependencies": {
+    "mapshaper": "^0.6.104"
+  }
+}

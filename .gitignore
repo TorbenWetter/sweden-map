@@ -1,0 +1,8 @@
+node_modules/
+data/raw/
+data/work/
+app/public/data/
+dist/
+.DS_Store
+*.log
+*.tsbuildinfo

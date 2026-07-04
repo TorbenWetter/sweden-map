@@ -1,0 +1,12 @@
+{
+  "name": "sweden-map",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "pipeline": "pnpm --filter pipeline all",
+    "dev": "pnpm --filter app dev",
+    "build": "pnpm --filter app build",
+    "preview": "pnpm --filter app preview"
+  },
+  "packageManager": "pnpm@10.4.1"
+}
