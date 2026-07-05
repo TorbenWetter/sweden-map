@@ -35,6 +35,9 @@
     "railways": "Järnväg",
     "ferries": "Färjelinje",
     "trails": "Vandringsled",
+    "lighthouses": "Fyr",
+    "airports": "Flygplats",
+    "castles": "Slott",
     "lakes": "Sjö",
     "parks": "Nationalpark",
     "lan": "Länsgräns",
@@ -264,6 +267,51 @@
       },
       "print": {
         "file": "trails.json",
+        "bytes": 1,
+        "features": 1,
+        "bbox": null
+      }
+    },
+    "lighthouses": {
+      "tiered": false,
+      "preview": {
+        "file": "lighthouses.json",
+        "bytes": 1,
+        "features": 1,
+        "bbox": null
+      },
+      "print": {
+        "file": "lighthouses.json",
+        "bytes": 1,
+        "features": 1,
+        "bbox": null
+      }
+    },
+    "airports": {
+      "tiered": false,
+      "preview": {
+        "file": "airports.json",
+        "bytes": 1,
+        "features": 1,
+        "bbox": null
+      },
+      "print": {
+        "file": "airports.json",
+        "bytes": 1,
+        "features": 1,
+        "bbox": null
+      }
+    },
+    "castles": {
+      "tiered": false,
+      "preview": {
+        "file": "castles.json",
+        "bytes": 1,
+        "features": 1,
+        "bbox": null
+      },
+      "print": {
+        "file": "castles.json",
         "bytes": 1,
         "features": 1,
         "bbox": null

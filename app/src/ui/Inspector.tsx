@@ -54,7 +54,8 @@ function LayerTab() {
       if (t) fn(t);
     });
 
-  const hasFill = ['sea', 'bathymetry', 'neighbors', 'sweden', 'parks', 'lakes', 'places', 'labels'].includes(layer.id);
+  const hasFill = ['sea', 'bathymetry', 'neighbors', 'sweden', 'parks', 'lakes', 'places', 'labels', 'lighthouses', 'airports', 'castles'].includes(layer.id);
+  const isIcon = ['lighthouses', 'airports', 'castles'].includes(layer.id);
   const hasStroke = ['waterlines', 'contours', 'sweden', 'lakes', 'parks', 'neBorders', 'rivers', 'kommun', 'lan', 'roads', 'railways', 'ferries', 'trails', 'graticule'].includes(layer.id);
   const hasDash = ['neBorders', 'kommun', 'lan', 'railways', 'ferries', 'trails', 'graticule'].includes(layer.id);
 
@@ -82,6 +83,9 @@ function LayerTab() {
         ) : null}
         {hasDash ? (
           <SelectField label="Line style" value={layer.dash ?? 'solid'} options={DASH_OPTIONS} onChange={(v) => patch((l) => (l.dash = v))} />
+        ) : null}
+        {isIcon ? (
+          <NumberField label="Icon size" value={layer.sizeMm ?? 2.6} step={0.2} min={1} max={8} unit="mm" onChange={(v) => patch((l) => (l.sizeMm = v))} />
         ) : null}
         {layer.id === 'hillshade' ? (
           <>

@@ -1,0 +1,1 @@
+{"type":"Topology","objects":{"airports_json":{"type":"GeometryCollection","geometries":[{"type":"Point","coordinates":[0,0],"properties":{"name":"Test Airport","iata":"TST"}}]}},"arcs":[],"bbox":[720000,6560000,720000,6560000],"transform":{"scale":[1,1],"translate":[720000,6560000]}}

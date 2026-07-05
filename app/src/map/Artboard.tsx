@@ -44,6 +44,21 @@ function dashArray(dash: Dash | undefined, w: number): string | undefined {
 
 const SERIF_STACK = "'Iowan Old Style', 'Palatino', 'Georgia', serif";
 
+/** Icon glyphs in a 10×10 box centered on 0,0; scaled by sizeMm/10 at render. */
+const ICON_GLYPHS: Record<string, { fill: string; stroke?: string }> = {
+  lighthouses: {
+    // tower + lamp, with light rays as stroke
+    fill: 'M -1.7 5 L -0.95 -2.1 L 0.95 -2.1 L 1.7 5 Z M 0 -4.4 m -0.95 0 a 0.95 0.95 0 1 0 1.9 0 a 0.95 0.95 0 1 0 -1.9 0',
+    stroke: 'M -3.9 -4.4 L -2.1 -4.4 M 2.1 -4.4 L 3.9 -4.4 M -3.3 -6.3 L -1.9 -5.5 M 3.3 -6.3 L 1.9 -5.5',
+  },
+  airports: {
+    fill: 'M 0 -4.4 L 0.85 -1.2 L 4.2 0.7 L 4.2 1.7 L 0.75 0.75 L 0.6 3.1 L 1.95 4.1 L 1.95 4.9 L 0 4.4 L -1.95 4.9 L -1.95 4.1 L -0.6 3.1 L -0.75 0.75 L -4.2 1.7 L -4.2 0.7 L -0.85 -1.2 Z',
+  },
+  castles: {
+    fill: 'M -2.9 5 L -2.9 -2.4 L -2.9 -4.4 L -1.7 -4.4 L -1.7 -3.2 L -0.6 -3.2 L -0.6 -4.4 L 0.6 -4.4 L 0.6 -3.2 L 1.7 -3.2 L 1.7 -4.4 L 2.9 -4.4 L 2.9 5 Z',
+  },
+};
+
 export function Artboard({ recipe, data, projected, layout, hillshadeHref, interactive }: ArtboardProps) {
   const { path, toMm } = projected;
   const { wMm, hMm } = recipe.paper;
@@ -362,6 +377,30 @@ export function Artboard({ recipe, data, projected, layout, hillshadeHref, inter
             {...click('ferries')}
           />
         );
+      case 'lighthouses':
+      case 'airports':
+      case 'castles': {
+        const glyph = ICON_GLYPHS[l.id];
+        const feats = data.fc[l.id]?.features ?? [];
+        const scale = (l.sizeMm ?? 2.6) / 10;
+        const halo = recipe.furniture.halo;
+        return (
+          <g {...common} key={l.id} {...click(l.id)}>
+            {feats.map((f, i) => {
+              const [x, y] = toMm(f.geometry.coordinates[0], f.geometry.coordinates[1]);
+              if (x < inset || x > wMm - inset || y < inset || y > hMm - inset) return null;
+              return (
+                <g key={i} transform={`translate(${Math.round(x * 100) / 100} ${Math.round(y * 100) / 100}) scale(${scale})`}>
+                  <path d={glyph.fill} fill={l.fill} stroke={halo} strokeWidth={0.9} paintOrder="stroke" strokeLinejoin="round" />
+                  {glyph.stroke ? (
+                    <path d={glyph.stroke} fill="none" stroke={l.fill} strokeWidth={0.8} strokeLinecap="round" />
+                  ) : null}
+                </g>
+              );
+            })}
+          </g>
+        );
+      }
       case 'graticule':
         return <path {...common} d={dGraticule} fill="none" stroke={l.stroke} strokeWidth={l.strokeWidthMm} strokeDasharray={dashArray(l.dash, l.strokeWidthMm ?? 0.12)} />;
       case 'places':
@@ -469,7 +508,7 @@ export function Artboard({ recipe, data, projected, layout, hillshadeHref, inter
   // ---- furniture ----
   const fu = recipe.furniture;
   const legendItems = useMemo(() => {
-    const items: Array<{ kind: 'line' | 'dash' | 'rect' | 'dot'; color: string; w?: number; label: string; dash?: Dash }> = [];
+    const items: Array<{ kind: 'line' | 'dash' | 'rect' | 'dot' | 'icon'; color: string; w?: number; label: string; dash?: Dash; icon?: string }> = [];
     const L = layerMap;
     const t = (key: string, fallback: string) => data.manifest.legendLabels?.[key] ?? fallback;
     if (L.roads?.visible) items.push({ kind: 'line', color: L.roads.stroke ?? '#000', w: L.roads.strokeWidthMm, label: t('roads', 'Major road') });
@@ -481,6 +520,12 @@ export function Artboard({ recipe, data, projected, layout, hillshadeHref, inter
     if (L.lan?.visible) items.push({ kind: 'line', color: L.lan.stroke ?? '#888', w: L.lan.strokeWidthMm, label: t('lan', 'Region border'), dash: L.lan.dash });
     if (L.kommun?.visible) items.push({ kind: 'line', color: L.kommun.stroke ?? '#aaa', w: L.kommun.strokeWidthMm, label: t('kommun', 'Municipality border'), dash: L.kommun.dash });
     if (L.places?.visible) items.push({ kind: 'dot', color: L.places.fill ?? '#000', label: t('places', 'Town') });
+    const iconFallback = { lighthouses: 'Lighthouse', airports: 'Airport', castles: 'Castle' } as const;
+    for (const iconId of ['lighthouses', 'airports', 'castles'] as const) {
+      if (L[iconId]?.visible) {
+        items.push({ kind: 'icon', color: L[iconId].fill ?? '#333', label: t(iconId, iconFallback[iconId]), icon: iconId });
+      }
+    }
     return items;
   }, [layerMap, data.manifest.legendLabels]);
 
@@ -597,7 +642,12 @@ export function Artboard({ recipe, data, projected, layout, hillshadeHref, inter
             const y = i * 5.4;
             return (
               <g key={it.label} transform={`translate(0 ${y})`}>
-                {it.kind === 'rect' ? (
+                {it.kind === 'icon' && it.icon ? (
+                  <g transform="translate(3.5 -0.9) scale(0.24)">
+                    <path d={ICON_GLYPHS[it.icon].fill} fill={it.color} />
+                    {ICON_GLYPHS[it.icon].stroke ? <path d={ICON_GLYPHS[it.icon].stroke!} fill="none" stroke={it.color} strokeWidth={0.8} strokeLinecap="round" /> : null}
+                  </g>
+                ) : it.kind === 'rect' ? (
                   <rect x={0} y={-2.6} width={7} height={3.4} fill={it.color} />
                 ) : it.kind === 'dot' ? (
                   <circle cx={3.5} cy={-0.9} r={0.85} fill={it.color} />

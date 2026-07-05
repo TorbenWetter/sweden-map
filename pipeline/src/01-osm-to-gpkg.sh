@@ -11,7 +11,8 @@ export OSM_MAX_TMPFILE_SIZE=4000
 
 log "pbf → gpkg: places (points)…"
 ogr2ogr -f GPKG "$GPKG" "$PBF" points \
-  -where "place IN ('city','town')" -nln places_raw
+  -where "place IN ('city','town') OR man_made = 'lighthouse' OR other_tags LIKE '%\"aeroway\"=>\"aerodrome\"%' OR other_tags LIKE '%\"historic\"=>\"castle\"%'" \
+  -nln places_raw
 
 log "pbf → gpkg: transport + rivers + ferries (lines)…"
 ogr2ogr -f GPKG -update "$GPKG" "$PBF" lines \
@@ -20,7 +21,7 @@ ogr2ogr -f GPKG -update "$GPKG" "$PBF" lines \
 
 log "pbf → gpkg: admin/water/parks (multipolygons)…"
 ogr2ogr -f GPKG -update "$GPKG" "$PBF" multipolygons \
-  -where "boundary IN ('administrative','national_park') OR \"natural\" = 'water' OR leisure = 'nature_reserve'" \
+  -where "boundary IN ('administrative','national_park') OR \"natural\" = 'water' OR leisure = 'nature_reserve' OR aeroway = 'aerodrome' OR historic = 'castle'" \
   -nln polys_raw
 
 log "pbf → gpkg: hiking route relations (multilinestrings)…"

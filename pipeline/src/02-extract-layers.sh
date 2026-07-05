@@ -64,6 +64,23 @@ X trails "$GPKG" -dialect sqlite -sql \
    WHERE hstore_get_value(other_tags,'route')='hiking'
      AND hstore_get_value(other_tags,'network') IN ('nwn','rwn')"
 
+X lighthouses "$GPKG" -dialect sqlite -sql \
+  "SELECT name, geom FROM places_raw WHERE man_made='lighthouse'"
+
+X airports_pt "$GPKG" -dialect sqlite -sql \
+  "SELECT name, hstore_get_value(other_tags,'iata') AS iata, geom FROM places_raw
+   WHERE hstore_get_value(other_tags,'aeroway')='aerodrome' AND hstore_get_value(other_tags,'iata') IS NOT NULL"
+
+X airports_poly "$GPKG" -dialect sqlite -sql \
+  "SELECT name, hstore_get_value(other_tags,'iata') AS iata, geom FROM polys_raw
+   WHERE aeroway='aerodrome' AND hstore_get_value(other_tags,'iata') IS NOT NULL"
+
+X castles_pt "$GPKG" -dialect sqlite -sql \
+  "SELECT name, geom FROM places_raw WHERE hstore_get_value(other_tags,'historic')='castle'"
+
+X castles_poly "$GPKG" -dialect sqlite -sql \
+  "SELECT name, geom FROM polys_raw WHERE historic='castle'"
+
 X places "$GPKG" -dialect sqlite -sql \
   "SELECT name, place,
           CAST(hstore_get_value(other_tags,'population') AS INTEGER) AS population,

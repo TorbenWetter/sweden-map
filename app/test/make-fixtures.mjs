@@ -71,6 +71,9 @@ const ferries = fc([
 const trails = fc([
   feat(line([[420000, 7050000], [460000, 7250000], [500000, 7420000]]), { name: 'Testleden', network: 'nwn', length_km: 420 }),
 ]);
+const lighthouses = fc([feat(point(950000, 6440000), { name: 'Testfyren' })]);
+const airports = fc([feat(point(720000, 6560000), { name: 'Test Airport', iata: 'TST' })]);
+const castles = fc([feat(point(500000, 6500000), { name: 'Testslottet' })]);
 const bathymetry = fc([20, 50, 100, 200, 500].map((depth, i) =>
   feat(rect(940000 + i * 2000, 6300000, 1060000 - i * 2000, 7400000 - i * 30000), { depth }),
 ));
@@ -113,6 +116,9 @@ write('waterlines.json', waterlines);
 write('bathymetry.json', bathymetry);
 write('ferries.json', ferries);
 write('trails.json', trails);
+write('lighthouses.json', lighthouses);
+write('airports.json', airports);
+write('castles.json', castles);
 write('graticule.json', graticule);
 write('ne-borders.json', neBorders);
 write('sea-labels.json', seaLabels);
@@ -125,6 +131,9 @@ const SINGLE_FILES = {
   bathymetry: 'bathymetry.json',
   ferries: 'ferries.json',
   trails: 'trails.json',
+  lighthouses: 'lighthouses.json',
+  airports: 'airports.json',
+  castles: 'castles.json',
   graticule: 'graticule.json',
   neBorders: 'ne-borders.json',
   seaLabels: 'sea-labels.json',
@@ -141,7 +150,7 @@ const manifest = {
   swedenBounds: [300000, 6200000, 980000, 7500000],
   placePriority: ['Stockholm', 'Göteborg', 'Malmö'],
   layerLabels: { sweden: 'Sweden', lan: 'Län borders', kommun: 'Kommun borders' },
-  legendLabels: { roads: 'Större väg', railways: 'Järnväg', ferries: 'Färjelinje', trails: 'Vandringsled', lakes: 'Sjö', parks: 'Nationalpark', lan: 'Länsgräns', kommun: 'Kommungräns', places: 'Tätort' },
+  legendLabels: { roads: 'Större väg', railways: 'Järnväg', ferries: 'Färjelinje', trails: 'Vandringsled', lighthouses: 'Fyr', airports: 'Flygplats', castles: 'Slott', lakes: 'Sjö', parks: 'Nationalpark', lan: 'Länsgräns', kommun: 'Kommungräns', places: 'Tätort' },
   layers: {
     ...Object.fromEntries(
       Object.keys(tiered).map((id) => [

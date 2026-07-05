@@ -18,6 +18,9 @@ export type LayerId =
   | 'railways'
   | 'ferries'
   | 'trails'
+  | 'lighthouses'
+  | 'airports'
+  | 'castles'
   | 'graticule'
   | 'places'
   | 'labels';
@@ -77,6 +80,8 @@ export interface LayerState {
   stroke?: string;
   strokeWidthMm?: number;
   dash?: Dash;
+  /** icon layers: glyph size */
+  sizeMm?: number;
   /** per-class overrides (roads); absent classes inherit stroke × width factor */
   classStyles?: Record<string, ClassStyle>;
   /** contrasting under-stroke beneath all classes (roads) */
@@ -182,6 +187,9 @@ export const LAYER_LABELS: Record<LayerId, string> = {
   railways: 'Railways',
   ferries: 'Ferry routes',
   trails: 'Hiking trails',
+  lighthouses: 'Lighthouses',
+  airports: 'Airports',
+  castles: 'Castles',
   graticule: 'Graticule',
   places: 'Cities & towns',
   labels: 'Labels',

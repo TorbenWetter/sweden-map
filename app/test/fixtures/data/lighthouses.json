@@ -1,0 +1,1 @@
+{"type":"Topology","objects":{"lighthouses_json":{"type":"GeometryCollection","geometries":[{"type":"Point","coordinates":[0,0],"properties":{"name":"Testfyren"}}]}},"arcs":[],"bbox":[950000,6440000,950000,6440000],"transform":{"scale":[1,1],"translate":[950000,6440000]}}

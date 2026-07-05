@@ -155,6 +155,30 @@ log "trails…"
   -filter-fields name,network,length_km \
   -o format=topojson "$OUT/trails.json"
 
+# --- icon layers: lighthouses, IATA airports, castles (points; polygons -> centroids) ---
+log "icons…"
+"$MS" "$WORK/lighthouses.geojson" -clip "$WORK/sweden0.geojson" \
+  -filter 'name != null' \
+  -filter-fields name -o format=topojson "$OUT/lighthouses.json"
+
+# point sources listed first so -uniq prefers them over polygon centroids
+"$MS" "$WORK/airports_poly.geojson" -points -o "$WORK/airports_polypt.geojson"
+"$MS" -i "$WORK/airports_pt.geojson" "$WORK/airports_polypt.geojson" combine-files \
+  -merge-layers force \
+  -clip "$WORK/sweden0.geojson" \
+  -uniq iata \
+  -filter-fields name,iata \
+  -o format=topojson "$OUT/airports.json"
+
+"$MS" "$WORK/castles_poly.geojson" -points -o "$WORK/castles_polypt.geojson"
+"$MS" -i "$WORK/castles_pt.geojson" "$WORK/castles_polypt.geojson" combine-files \
+  -merge-layers force \
+  -clip "$WORK/sweden0.geojson" \
+  -filter 'name != null' \
+  -uniq name \
+  -filter-fields name \
+  -o format=topojson "$OUT/castles.json"
+
 # --- point/line layers without tiers ---
 log "places, graticule, ne borders, labels…"
 "$MS" "$WORK/places.geojson" -clip "$WORK/sweden0.geojson" \
