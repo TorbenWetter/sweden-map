@@ -56,11 +56,14 @@ const layers = {
 
 const swedenBounds = layers.sweden?.print?.bbox ?? [FRAME.xmin, FRAME.ymin, FRAME.xmax, FRAME.ymax];
 
-const hillshade = existsSync(join(OUT, 'hillshade-preview.png'))
+// dark = black+alpha (composites like multiply), light = white+alpha (like screen)
+const hillshade = existsSync(join(OUT, 'hillshade-dark-preview.png'))
   ? {
       bounds: FRAME,
-      preview: { file: 'hillshade-preview.png', bytes: statSync(join(OUT, 'hillshade-preview.png')).size },
-      print: { file: 'hillshade-print.png', bytes: statSync(join(OUT, 'hillshade-print.png')).size },
+      variants: {
+        dark: { preview: 'hillshade-dark-preview.png', print: 'hillshade-dark-print.png' },
+        light: { preview: 'hillshade-light-preview.png', print: 'hillshade-light-print.png' },
+      },
     }
   : null;
 

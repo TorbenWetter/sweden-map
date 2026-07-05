@@ -14,10 +14,10 @@ interface Props {
   data: MapData;
   projected: Projected;
   layout: LabelLayout;
-  hillshadeHref: string | null;
+  hillshade: Record<'dark' | 'light', string> | null;
 }
 
-export function MapViewport({ data, projected, layout, hillshadeHref }: Props) {
+export function MapViewport({ data, projected, layout, hillshade }: Props) {
   const recipe = useStudio((s) => s.recipe);
   const view = useStudio((s) => s.view);
   const setView = useStudio((s) => s.setView);
@@ -188,7 +188,7 @@ export function MapViewport({ data, projected, layout, hillshadeHref }: Props) {
               data={data}
               projected={projected}
               layout={layout}
-              hillshadeHref={hillshadeHref}
+              hillshade={hillshade}
               interactive={{ selected, labelEdit, onSelectLayer: select, onLabelPointerDown }}
             />
           </g>

@@ -18,7 +18,8 @@ export interface ArtboardProps {
   data: MapData;
   projected: Projected;
   layout: LabelLayout;
-  hillshadeHref: string | null;
+  /** per-variant image URLs (or data URLs at export); Artboard picks by the layer's blend */
+  hillshade: Record<'dark' | 'light', string> | null;
   interactive?: ArtboardInteractive;
 }
 
@@ -59,7 +60,7 @@ const ICON_GLYPHS: Record<string, { fill: string; stroke?: string }> = {
   },
 };
 
-export function Artboard({ recipe, data, projected, layout, hillshadeHref, interactive }: ArtboardProps) {
+export function Artboard({ recipe, data, projected, layout, hillshade, interactive }: ArtboardProps) {
   const { path, toMm } = projected;
   const { wMm, hMm } = recipe.paper;
   const fr = recipe.furniture.frame;
@@ -246,31 +247,27 @@ export function Artboard({ recipe, data, projected, layout, hillshadeHref, inter
           </g>
         );
       }
-      case 'hillshade':
-        if (!hillshadeHref || !data.manifest.hillshade) return null;
-        {
-          const b = data.manifest.hillshade.bounds;
-          const [x0, y0] = toMm(b.xmin, b.ymax);
-          const [x1, y1] = toMm(b.xmax, b.ymin);
-          const blend = l.filters.blend ?? 'multiply';
-          return (
-            <g {...common} key={l.id} clipPath={dSweden || dNeighbors ? 'url(#land-clip)' : undefined}>
-              <image
-                href={hillshadeHref}
-                x={x0}
-                y={y0}
-                width={x1 - x0}
-                height={y1 - y0}
-                preserveAspectRatio="none"
-                style={{
-                  mixBlendMode: blend,
-                  // screen mode inverts the shade so shadows become glow on dark themes
-                  filter: blend === 'screen' ? 'invert(1)' : undefined,
-                }}
-              />
-            </g>
-          );
-        }
+      case 'hillshade': {
+        if (!hillshade || !data.manifest.hillshade) return null;
+        const b = data.manifest.hillshade.bounds;
+        const [x0, y0] = toMm(b.xmin, b.ymax);
+        const [x1, y1] = toMm(b.xmax, b.ymin);
+        // blend math + land clip are baked into the alpha PNGs: dark composites like
+        // multiply, light like screen — a plain image stays on the GPU fast path
+        const href = (l.filters.blend ?? 'multiply') === 'screen' ? hillshade.light : hillshade.dark;
+        return (
+          <image
+            {...common}
+            key={l.id}
+            href={href}
+            x={x0}
+            y={y0}
+            width={x1 - x0}
+            height={y1 - y0}
+            preserveAspectRatio="none"
+          />
+        );
+      }
       case 'neighbors':
         return <path {...common} d={dNeighbors} fill={l.fill} stroke="none" {...click('neighbors')} />;
       case 'neBorders':
@@ -548,13 +545,6 @@ export function Artboard({ recipe, data, projected, layout, hillshadeHref, inter
           // admin meshes include maritime boundary segments — clip them to the landmass
           <clipPath id="sweden-clip">
             <path d={dSweden} />
-          </clipPath>
-        ) : null}
-        {dSweden || dNeighbors ? (
-          // hillshade is clipped to land: DEM noise over open water would texture the sea
-          <clipPath id="land-clip">
-            {dSweden ? <path d={dSweden} /> : null}
-            {dNeighbors ? <path d={dNeighbors} /> : null}
           </clipPath>
         ) : null}
       </defs>

@@ -11,6 +11,7 @@ export interface Composition {
   data: MapData;
   projected: Projected;
   layout: LabelLayout;
+  /** server URL of the blend-appropriate hillshade variant for this recipe, or null */
   hillshadeUrl: string | null;
 }
 
@@ -19,8 +20,9 @@ export async function compose(recipe: Recipe, tier: Tier): Promise<Composition> 
   const projected = makeProjection(data.manifest, recipe);
   const layout = layoutLabels(data, projected, recipe);
   const hs = recipe.layers.find((l) => l.id === 'hillshade');
+  const variant = (hs?.filters.blend ?? 'multiply') === 'screen' ? 'light' : 'dark';
   const hillshadeUrl =
-    hs?.visible && data.manifest.hillshade ? `/data/${data.manifest.hillshade[tier].file}` : null;
+    hs?.visible && data.manifest.hillshade ? `/data/${data.manifest.hillshade.variants[variant][tier]}` : null;
   return { data, projected, layout, hillshadeUrl };
 }
 
@@ -44,7 +46,7 @@ export function svgMarkup(recipe: Recipe, c: Composition, hillshadeHref: string 
       viewBox={`0 0 ${wMm} ${hMm}`}
       fontFamily="Inter, 'Helvetica Neue', sans-serif"
     >
-      <Artboard recipe={recipe} data={c.data} projected={c.projected} layout={c.layout} hillshadeHref={hillshadeHref} />
+      <Artboard recipe={recipe} data={c.data} projected={c.projected} layout={c.layout} hillshade={hillshadeHref ? { dark: hillshadeHref, light: hillshadeHref } : null} />
     </svg>,
   );
   return `<?xml version="1.0" encoding="UTF-8"?>\n${body}`;

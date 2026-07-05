@@ -83,7 +83,12 @@ export default function App() {
     [data, projected, labelKey, fontsReady],
   );
 
-  const hillshadeHref = data?.manifest.hillshade ? `/data/${data.manifest.hillshade.preview.file}` : null;
+  const hillshade = data?.manifest.hillshade
+    ? {
+        dark: `/data/${data.manifest.hillshade.variants.dark.preview}`,
+        light: `/data/${data.manifest.hillshade.variants.light.preview}`,
+      }
+    : null;
 
   return (
     <div className="app">
@@ -101,7 +106,7 @@ export default function App() {
             </div>
           </div>
         ) : data && projected ? (
-          <MapViewport data={data} projected={projected} layout={layout} hillshadeHref={hillshadeHref} />
+          <MapViewport data={data} projected={projected} layout={layout} hillshade={hillshade} />
         ) : (
           <div className="center-pane">
             <div className="loading-card">Loading Sweden…</div>

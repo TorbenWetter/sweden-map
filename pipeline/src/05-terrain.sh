@@ -36,10 +36,28 @@ gdaldem hillshade -q -multidirectional -z 4.5 -alt 35 -compute_edges \
 # Multidirectional hillshade renders flat terrain ≈181; stretch so flat → 255 (no-op under multiply).
 gdal_translate -q -ot Byte -scale 0 181 0 255 "$WORK/hillshade-raw.tif" "$WORK/hillshade.tif" -co COMPRESS=DEFLATE
 
+# Bake blend math + land clip into alpha PNGs: compositing BLACK with alpha 1−g equals
+# multiply(g); compositing WHITE with the same alpha equals screen(1−g). This lets the
+# app draw a plain <image> — no blend mode, no invert filter, no giant clipPath — which
+# keeps the browser on the GPU fast path (blend+clip cost ~5 s per load) and exports
+# cleanly to Illustrator.
+log "hillshade alpha variants…"
+gdal_rasterize -q -burn 255 -init 0 -ot Byte \
+  -te $FRAME_XMIN $FRAME_YMIN $FRAME_XMAX $FRAME_YMAX -tr 120 120 \
+  "$WORK/land.preview.geojson" "$WORK/landmask.tif"
+gdal_calc.py --quiet --overwrite -A "$WORK/hillshade.tif" -B "$WORK/landmask.tif" \
+  --calc="(255-A)*(B/255.0)" --type=Byte --outfile="$WORK/hs-alpha.tif"
+gdal_calc.py --quiet --overwrite -A "$WORK/hs-alpha.tif" --calc="A*0" --type=Byte --outfile="$WORK/hs-black.tif"
+gdal_calc.py --quiet --overwrite -A "$WORK/hs-alpha.tif" --calc="A*0+255" --type=Byte --outfile="$WORK/hs-white.tif"
+
 log "exporting PNGs…"
-gdal_translate -q -of PNG -outsize 0 2000 "$WORK/hillshade.tif" "$OUT/hillshade-preview.png"
-gdal_translate -q -of PNG -outsize 0 9600 "$WORK/hillshade.tif" "$OUT/hillshade-print.png"
-rm -f "$OUT"/hillshade-*.png.aux.xml
+for VARIANT in dark light; do
+  BAND=$([ "$VARIANT" = dark ] && echo "$WORK/hs-black.tif" || echo "$WORK/hs-white.tif")
+  gdal_merge.py -q -separate -o "$WORK/hs-$VARIANT-la.tif" "$BAND" "$WORK/hs-alpha.tif"
+  gdal_translate -q -of PNG -outsize 0 2000 "$WORK/hs-$VARIANT-la.tif" "$OUT/hillshade-$VARIANT-preview.png"
+  gdal_translate -q -of PNG -outsize 0 9600 "$WORK/hs-$VARIANT-la.tif" "$OUT/hillshade-$VARIANT-print.png"
+done
+rm -f "$OUT"/hillshade-*.png.aux.xml "$OUT/hillshade-preview.png" "$OUT/hillshade-print.png"
 
 log "contours (200 m base interval)…"
 rm -f "$WORK/contours.gpkg" "$WORK/contours.geojson"

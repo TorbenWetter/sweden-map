@@ -67,7 +67,7 @@ export function PrintPage() {
           viewBox={`0 0 ${wMm} ${hMm}`}
           fontFamily="Inter, 'Helvetica Neue', sans-serif"
         >
-          <Artboard recipe={recipe} data={c.data} projected={c.projected} layout={c.layout} hillshadeHref={c.hillshadeUrl} />
+          <Artboard recipe={recipe} data={c.data} projected={c.projected} layout={c.layout} hillshade={c.hillshadeUrl ? { dark: c.hillshadeUrl, light: c.hillshadeUrl } : null} />
         </svg>
       ) : (
         <div className="sheet" />

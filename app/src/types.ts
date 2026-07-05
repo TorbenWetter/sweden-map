@@ -162,8 +162,8 @@ export interface Manifest {
   layers: Record<string, LayerEntry | null>;
   hillshade: {
     bounds: { xmin: number; ymin: number; xmax: number; ymax: number };
-    preview: { file: string; bytes: number };
-    print: { file: string; bytes: number };
+    /** dark = black+alpha (multiply-equivalent), light = white+alpha (screen-equivalent) */
+    variants: Record<'dark' | 'light', { preview: string; print: string }>;
   } | null;
   attribution: string[];
 }
