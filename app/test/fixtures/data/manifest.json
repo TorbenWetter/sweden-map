@@ -34,6 +34,7 @@
     "roads": "Större väg",
     "railways": "Järnväg",
     "ferries": "Färjelinje",
+    "trails": "Vandringsled",
     "lakes": "Sjö",
     "parks": "Nationalpark",
     "lan": "Länsgräns",
@@ -248,6 +249,21 @@
       },
       "print": {
         "file": "ferries.json",
+        "bytes": 1,
+        "features": 1,
+        "bbox": null
+      }
+    },
+    "trails": {
+      "tiered": false,
+      "preview": {
+        "file": "trails.json",
+        "bytes": 1,
+        "features": 1,
+        "bbox": null
+      },
+      "print": {
+        "file": "trails.json",
         "bytes": 1,
         "features": 1,
         "bbox": null

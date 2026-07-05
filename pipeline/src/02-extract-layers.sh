@@ -59,6 +59,11 @@ X railways "$GPKG" -dialect sqlite -sql \
 X ferries "$GPKG" -dialect sqlite -sql \
   "SELECT name, geom FROM lines_raw WHERE hstore_get_value(other_tags,'route')='ferry'"
 
+X trails "$GPKG" -dialect sqlite -sql \
+  "SELECT name, hstore_get_value(other_tags,'network') AS network, geom FROM routes_raw
+   WHERE hstore_get_value(other_tags,'route')='hiking'
+     AND hstore_get_value(other_tags,'network') IN ('nwn','rwn')"
+
 X places "$GPKG" -dialect sqlite -sql \
   "SELECT name, place,
           CAST(hstore_get_value(other_tags,'population') AS INTEGER) AS population,

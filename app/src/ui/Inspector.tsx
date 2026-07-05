@@ -55,8 +55,8 @@ function LayerTab() {
     });
 
   const hasFill = ['sea', 'bathymetry', 'neighbors', 'sweden', 'parks', 'lakes', 'places', 'labels'].includes(layer.id);
-  const hasStroke = ['waterlines', 'contours', 'sweden', 'lakes', 'parks', 'neBorders', 'rivers', 'kommun', 'lan', 'roads', 'railways', 'ferries', 'graticule'].includes(layer.id);
-  const hasDash = ['neBorders', 'kommun', 'lan', 'railways', 'ferries', 'graticule'].includes(layer.id);
+  const hasStroke = ['waterlines', 'contours', 'sweden', 'lakes', 'parks', 'neBorders', 'rivers', 'kommun', 'lan', 'roads', 'railways', 'ferries', 'trails', 'graticule'].includes(layer.id);
+  const hasDash = ['neBorders', 'kommun', 'lan', 'railways', 'ferries', 'trails', 'graticule'].includes(layer.id);
 
   return (
     <>
@@ -165,6 +165,14 @@ function LayerFilters({ layer, patch }: { layer: LayerState; patch: (fn: (l: Lay
       return (
         <Section title="Filter">
           <RangeField label="Min length" value={layer.filters.minLengthKm ?? 30} min={30} max={400} display={(v) => `${Math.round(v)} km`} onChange={(v) => patch((l) => (l.filters.minLengthKm = v))} />
+        </Section>
+      );
+    case 'trails':
+      return (
+        <Section title="Trail networks">
+          <CheckRow label="National trails (Kungsleden…)" checked={layer.filters.networks?.nwn ?? true} onChange={(v) => patch((l) => { (l.filters.networks ??= {}).nwn = v; })} />
+          <CheckRow label="Regional trails" checked={layer.filters.networks?.rwn ?? false} onChange={(v) => patch((l) => { (l.filters.networks ??= {}).rwn = v; })} />
+          <RangeField label="Min length" value={layer.filters.minLengthKm ?? 60} min={40} max={400} display={(v) => `${Math.round(v)} km`} onChange={(v) => patch((l) => (l.filters.minLengthKm = v))} />
         </Section>
       );
     case 'ferries':

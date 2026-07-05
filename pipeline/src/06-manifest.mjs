@@ -43,6 +43,7 @@ const layers = {
   parks: tiered('parks'),
   waterlines: single('waterlines', 'waterlines.json'),
   ferries: single('ferries', 'ferries.json'),
+  trails: single('trails', 'trails.json'),
   places: single('places', 'places.json'),
   graticule: single('graticule', 'graticule.json'),
   neBorders: single('neBorders', 'ne-borders.json'),

@@ -13,6 +13,7 @@ const DEFAULT_FILTERS: Partial<Record<LayerId, LayerState['filters']>> = {
   lakes: { minAreaKm2: 8 },
   rivers: { minLengthKm: 60 },
   ferries: { minLengthKm: 10 },
+  trails: { networks: { nwn: true, rwn: false }, minLengthKm: 60 },
   parks: { kinds: { national_park: true, nature_reserve: false } },
   places: { minPopulation: 14000 },
   labels: {
@@ -29,7 +30,7 @@ const DEFAULT_FILTERS: Partial<Record<LayerId, LayerState['filters']>> = {
     (flat terrain = no-op) and below line work and labels. */
 const ORDER: LayerId[] = [
   'sea', 'bathymetry', 'waterlines', 'neighbors', 'neBorders', 'sweden', 'parks', 'lakes',
-  'rivers', 'hillshade', 'contours', 'kommun', 'lan', 'roads', 'railways', 'ferries', 'graticule', 'places', 'labels',
+  'rivers', 'hillshade', 'contours', 'kommun', 'lan', 'roads', 'railways', 'trails', 'ferries', 'graticule', 'places', 'labels',
 ];
 
 function buildLayers(styles: Record<LayerId, StylePatch>, hidden: LayerId[] = []): LayerState[] {
@@ -87,11 +88,12 @@ export function nordic(): Recipe {
     lan: { stroke: '#9AA0A8', strokeWidthMm: 0.26 },
     roads: { stroke: '#B9553F', strokeWidthMm: 0.5 },
     railways: { stroke: '#2E3440', strokeWidthMm: 0.28, dash: 'dash' },
+    trails: { stroke: '#B98A5A', strokeWidthMm: 0.22, dash: 'dot' },
     ferries: { stroke: '#8FA6B8', strokeWidthMm: 0.18, dash: 'dash' },
     graticule: { stroke: '#A9BDCB', strokeWidthMm: 0.12, opacity: 0.6 },
     places: { fill: '#2E3440' },
     labels: { fill: '#2E3440', stroke: '#6E8296' },
-  }, ['kommun', 'graticule', 'waterlines', 'contours']), {});
+  }, ['kommun', 'graticule', 'waterlines', 'contours', 'trails']), {});
 }
 
 export function topo(): Recipe {
@@ -120,6 +122,7 @@ export function topo(): Recipe {
       },
     },
     railways: { stroke: '#1A1A1A', strokeWidthMm: 0.3, dash: 'dash' },
+    trails: { stroke: '#8A4A2E', strokeWidthMm: 0.24, dash: 'dot' },
     ferries: { stroke: '#4A7E99', strokeWidthMm: 0.2, dash: 'dash' },
     graticule: { stroke: '#7FA3B5', strokeWidthMm: 0.13, opacity: 0.8 },
     places: { fill: '#1A1A1A' },
@@ -148,11 +151,12 @@ export function dark(): Recipe {
     lan: { stroke: '#3A4250', strokeWidthMm: 0.26 },
     roads: { stroke: '#FFB454', strokeWidthMm: 0.45 },
     railways: { stroke: '#7FD1D9', strokeWidthMm: 0.24, dash: 'dash' },
+    trails: { stroke: '#8A7048', strokeWidthMm: 0.2, dash: 'dot' },
     ferries: { stroke: '#4E6070', strokeWidthMm: 0.18, dash: 'dash' },
     graticule: { stroke: '#26313E', strokeWidthMm: 0.12, opacity: 1 },
     places: { fill: '#E6E9EE' },
     labels: { fill: '#E6E9EE', stroke: '#5F7A8C' },
-  }, ['kommun', 'waterlines', 'contours']), {
+  }, ['kommun', 'waterlines', 'contours', 'trails']), {
     ink: '#E6E9EE',
     halo: '#0B0E13',
     title: { show: true, text: 'SVERIGE', sub: '59.33° N  ·  18.07° E', xMm: 462, yMm: 640, sizeMm: 12.5, trackingEm: 0.5, serif: false },
@@ -176,11 +180,12 @@ export function vintage(): Recipe {
     lan: { stroke: '#6E5B44', strokeWidthMm: 0.26, dash: 'dashdot' },
     roads: { stroke: '#A6503C', strokeWidthMm: 0.5 },
     railways: { stroke: '#3F352A', strokeWidthMm: 0.28, dash: 'dash' },
+    trails: { stroke: '#8A6A45', strokeWidthMm: 0.22, dash: 'dot' },
     ferries: { stroke: '#75908C', strokeWidthMm: 0.2, dash: 'dash' },
     graticule: { stroke: '#9C917B', strokeWidthMm: 0.13, opacity: 0.7 },
     places: { fill: '#3F352A' },
     labels: { fill: '#3F352A', stroke: '#5E7A74' },
-  }, ['kommun', 'bathymetry', 'contours']), {
+  }, ['kommun', 'bathymetry', 'contours', 'trails']), {
     ink: '#3F352A',
     halo: '#F3EAD8',
     title: { show: true, text: 'Sverige', sub: 'KONUNGARIKET SVERIGE  ·  {scale}', xMm: 462, yMm: 640, sizeMm: 13, trackingEm: 0.12, serif: true },
@@ -205,6 +210,7 @@ export function alpine(): Recipe {
     lan: { stroke: '#8E8E86', strokeWidthMm: 0.18 },
     roads: { stroke: '#8C4A3C', strokeWidthMm: 0.32 },
     railways: { stroke: '#3B3F45', strokeWidthMm: 0.22, dash: 'dash' },
+    trails: { stroke: '#A5522F', strokeWidthMm: 0.26, dash: 'dot' },
     ferries: { stroke: '#93AEBE', strokeWidthMm: 0.16, dash: 'dash' },
     graticule: { stroke: '#A9BDCB', strokeWidthMm: 0.12, opacity: 0.6 },
     places: { fill: '#33383E' },
@@ -234,11 +240,12 @@ export function blueprint(): Recipe {
     lan: { stroke: '#6E9BC0', strokeWidthMm: 0.22 },
     roads: { stroke: '#E8F1F8', strokeWidthMm: 0.4 },
     railways: { stroke: '#A5C8E1', strokeWidthMm: 0.26, dash: 'dash' },
+    trails: { stroke: '#8FB5D6', strokeWidthMm: 0.2, dash: 'dot' },
     ferries: { stroke: '#6E9BC0', strokeWidthMm: 0.18, dash: 'dash' },
     graticule: { stroke: '#3E6E96', strokeWidthMm: 0.14, opacity: 1 },
     places: { fill: '#F0F6FB' },
     labels: { fill: '#F0F6FB', stroke: '#9CC3E0' },
-  }, ['kommun', 'contours']), {
+  }, ['kommun', 'contours', 'trails']), {
     ink: '#F0F6FB',
     halo: '#0B2E4F',
     title: { show: true, text: 'SVERIGE', sub: 'CYANOTYP  ·  {scale}', xMm: 462, yMm: 640, sizeMm: 12.5, trackingEm: 0.5, serif: false },
@@ -264,11 +271,12 @@ export function aurora(): Recipe {
     lan: { stroke: '#263140', strokeWidthMm: 0.24 },
     roads: { stroke: '#5CE6A8', strokeWidthMm: 0.4, casing: { on: true, color: '#070B14', extraMm: 0.12 } },
     railways: { stroke: '#8F7BE8', strokeWidthMm: 0.24, dash: 'dash' },
+    trails: { stroke: '#C9A96E', strokeWidthMm: 0.2, dash: 'dot' },
     ferries: { stroke: '#2E4356', strokeWidthMm: 0.18, dash: 'dash' },
     graticule: { stroke: '#17222E', strokeWidthMm: 0.12, opacity: 1 },
     places: { fill: '#E7F4EC' },
     labels: { fill: '#E7F4EC', stroke: '#55829B' },
-  }, ['kommun', 'graticule', 'waterlines', 'contours']), {
+  }, ['kommun', 'graticule', 'waterlines', 'contours', 'trails']), {
     ink: '#CFE6D8',
     halo: '#070B14',
     title: { show: true, text: 'SVERIGE', sub: 'POLARNATT  ·  {scale}', xMm: 462, yMm: 640, sizeMm: 12.5, trackingEm: 0.55, serif: false },
@@ -294,6 +302,7 @@ export function flag(): Recipe {
     lan: { stroke: '#C79F00', strokeWidthMm: 0.2 },
     roads: { stroke: '#003A63', strokeWidthMm: 0.42, filters: { classes: { motorway: true, trunk: false, primary: false, secondary: false } } },
     railways: { stroke: '#003A63', strokeWidthMm: 0.24, dash: 'dash' },
+    trails: { stroke: '#003A63', strokeWidthMm: 0.2, dash: 'dot' },
     ferries: { stroke: '#CFE3F0', strokeWidthMm: 0.18, dash: 'dash' },
     graticule: { stroke: '#2E81B5', strokeWidthMm: 0.12, opacity: 0.8 },
     places: { fill: '#003A63', filters: { minPopulation: 300000 } },
@@ -301,7 +310,7 @@ export function flag(): Recipe {
       fill: '#003A63', stroke: '#CFE3F0',
       filters: { labelMinPopulation: 300000, fontScale: 1.15, seaLabels: false, lakeLabels: false, neighborLabels: false },
     },
-  }, ['kommun', 'lan', 'graticule', 'parks', 'neBorders', 'rivers', 'roads', 'railways', 'waterlines', 'bathymetry', 'contours', 'ferries']), {
+  }, ['kommun', 'lan', 'graticule', 'parks', 'neBorders', 'rivers', 'roads', 'railways', 'waterlines', 'bathymetry', 'contours', 'ferries', 'trails']), {
     ink: '#FFFFFF',
     halo: '#FECC02',
     title: { show: true, text: 'SVERIGE', sub: '{scale}', xMm: 462, yMm: 640, sizeMm: 14, trackingEm: 0.5, serif: false },
@@ -328,11 +337,12 @@ export function mono(): Recipe {
     lan: { stroke: '#4A4A46', strokeWidthMm: 0.24, dash: 'dashdot' },
     roads: { stroke: '#1A1A1A', strokeWidthMm: 0.35 },
     railways: { stroke: '#1A1A1A', strokeWidthMm: 0.24, dash: 'dash' },
+    trails: { stroke: '#4A4A46', strokeWidthMm: 0.2, dash: 'dot' },
     ferries: { stroke: '#6B6B66', strokeWidthMm: 0.16, dash: 'dash' },
     graticule: { stroke: '#C9C9C4', strokeWidthMm: 0.12, opacity: 1 },
     places: { fill: '#111111' },
     labels: { fill: '#111111', stroke: '#6B6B66' },
-  }, ['kommun', 'bathymetry', 'contours']), {
+  }, ['kommun', 'bathymetry', 'contours', 'trails']), {
     ink: '#111111',
     halo: '#FFFFFF',
     title: { show: true, text: 'SVERIGE', sub: 'ETSNING  ·  {scale}', xMm: 462, yMm: 640, sizeMm: 12, trackingEm: 0.28, serif: true },
@@ -357,11 +367,12 @@ export function retro(): Recipe {
     lan: { stroke: '#8C7B62', strokeWidthMm: 0.24 },
     roads: { stroke: '#D95B43', strokeWidthMm: 0.5, casing: { on: true, color: '#F5E9D0', extraMm: 0.14 } },
     railways: { stroke: '#4A4238', strokeWidthMm: 0.28, dash: 'dash' },
+    trails: { stroke: '#8A5A3A', strokeWidthMm: 0.22, dash: 'dot' },
     ferries: { stroke: '#467B76', strokeWidthMm: 0.2, dash: 'dash' },
     graticule: { stroke: '#A9BDA8', strokeWidthMm: 0.12, opacity: 0.7 },
     places: { fill: '#4A4238' },
     labels: { fill: '#4A4238', stroke: '#467B76' },
-  }, ['kommun', 'graticule', 'bathymetry', 'contours']), {
+  }, ['kommun', 'graticule', 'bathymetry', 'contours', 'trails']), {
     ink: '#4A4238',
     halo: '#F5E9D0',
     title: { show: true, text: 'SVERIGE', sub: 'VÄLKOMMEN TILL  ·  {scale}', xMm: 462, yMm: 640, sizeMm: 12.5, trackingEm: 0.35, serif: false },

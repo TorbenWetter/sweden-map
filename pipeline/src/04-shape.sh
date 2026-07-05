@@ -140,6 +140,21 @@ log "ferries…"
   -filter-fields name,length_km \
   -o format=topojson "$OUT/ferries.json"
 
+# --- hiking trails: route relations, national (nwn) and regional (rwn) ---
+# Long trails are stage relations ("Kungsleden Etapp 25: …") — strip the stage
+# suffix before dissolving so stages fuse into their parent trail.
+log "trails…"
+"$MS" "$WORK/trails.geojson" \
+  -clip "$WORK/sweden0.geojson" \
+  -each 'name=(name||"").replace(/\s+(etapp|stage|etappe|del|avsnitt)\b[\s\S]*$/i,"").replace(/[\s:,-]+$/,"")||null' \
+  -each 'key=name || "u" + this.id' \
+  -dissolve fields=key copy-fields=name,network \
+  -each 'length_km=Math.round(this.length/100)/10' \
+  -filter 'length_km>=40' \
+  -simplify weighted interval=200 \
+  -filter-fields name,network,length_km \
+  -o format=topojson "$OUT/trails.json"
+
 # --- point/line layers without tiers ---
 log "places, graticule, ne borders, labels…"
 "$MS" "$WORK/places.geojson" -clip "$WORK/sweden0.geojson" \

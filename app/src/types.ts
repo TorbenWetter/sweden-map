@@ -17,6 +17,7 @@ export type LayerId =
   | 'roads'
   | 'railways'
   | 'ferries'
+  | 'trails'
   | 'graticule'
   | 'places'
   | 'labels';
@@ -28,6 +29,8 @@ export interface LayerFilters {
   classes?: Record<string, boolean>;
   /** railways: which usage classes render */
   usages?: Record<string, boolean>;
+  /** trails: which route networks render (nwn national, rwn regional) */
+  networks?: Record<string, boolean>;
   /** lakes: minimum surface area */
   minAreaKm2?: number;
   /** rivers: minimum merged length */
@@ -178,6 +181,7 @@ export const LAYER_LABELS: Record<LayerId, string> = {
   roads: 'Roads',
   railways: 'Railways',
   ferries: 'Ferry routes',
+  trails: 'Hiking trails',
   graticule: 'Graticule',
   places: 'Cities & towns',
   labels: 'Labels',

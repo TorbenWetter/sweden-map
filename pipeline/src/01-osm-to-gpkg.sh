@@ -23,4 +23,9 @@ ogr2ogr -f GPKG -update "$GPKG" "$PBF" multipolygons \
   -where "boundary IN ('administrative','national_park') OR \"natural\" = 'water' OR leisure = 'nature_reserve'" \
   -nln polys_raw
 
+log "pbf → gpkg: hiking route relations (multilinestrings)…"
+ogr2ogr -f GPKG -update "$GPKG" "$PBF" multilinestrings \
+  -where "type = 'route' AND other_tags LIKE '%\"route\"=>\"hiking\"%'" \
+  -nln routes_raw
+
 log "gpkg written: $(du -h "$GPKG" | cut -f1)"
