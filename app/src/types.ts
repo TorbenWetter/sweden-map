@@ -99,12 +99,32 @@ export interface FileInfo {
   bbox: [number, number, number, number] | null;
 }
 
+export interface LayerEntry {
+  preview: FileInfo;
+  print: FileInfo;
+  /** distinct simplification tiers exist (legacy manifests: inferred from file names) */
+  tiered?: boolean;
+  /** render as interior-boundary mesh */
+  mesh?: boolean;
+}
+
 export interface Manifest {
+  manifestVersion?: number;
   generatedAt: string;
+  /** country metadata — the app has no hardcoded country facts */
+  country?: { name: string; code: string };
   epsg: number;
+  crsLabel?: string;
+  locale?: string;
   frame: { xmin: number; ymin: number; xmax: number; ymax: number };
   swedenBounds: [number, number, number, number];
-  layers: Record<string, { preview: FileInfo; print: FileInfo } | null>;
+  /** cities always shown/labeled regardless of population (e.g. county seats) */
+  placePriority?: string[];
+  /** chrome label overrides for country-specific layers */
+  layerLabels?: Partial<Record<LayerId, string>>;
+  /** poster legend strings */
+  legendLabels?: Partial<Record<string, string>>;
+  layers: Record<string, LayerEntry | null>;
   hillshade: {
     bounds: { xmin: number; ymin: number; xmax: number; ymax: number };
     preview: { file: string; bytes: number };
@@ -113,6 +133,7 @@ export interface Manifest {
   attribution: string[];
 }
 
+/** Defaults; country-specific entries are overridden by manifest.layerLabels. */
 export const LAYER_LABELS: Record<LayerId, string> = {
   sea: 'Sea',
   hillshade: 'Terrain relief',

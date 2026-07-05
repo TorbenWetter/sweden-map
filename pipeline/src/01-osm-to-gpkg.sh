@@ -3,7 +3,7 @@
 # (Filtering here keeps buildings/landuse/etc. out — the gpkg stays ~100× smaller.)
 source "$(dirname "${BASH_SOURCE[0]}")/env.sh"
 
-PBF="$RAW/sweden-latest.osm.pbf"
+PBF="$RAW/$PBF_FILE"
 GPKG="$WORK/osm.gpkg"
 rm -f "$GPKG"
 

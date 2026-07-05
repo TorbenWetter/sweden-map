@@ -9,15 +9,9 @@ SRC="$ROOT/pipeline/src"
 
 mkdir -p "$RAW" "$WORK" "$OUT"
 
-# Design frame in EPSG:3006 (SWEREF99 TM): Sweden + neighbor context margin.
-# Everything that only exists as backdrop (neighbors, graticule, DEM) is clipped to this.
-FRAME_XMIN=45000
-FRAME_YMIN=6098000
-FRAME_XMAX=1145000
-FRAME_YMAX=7707000
-
-# Same frame in lon/lat with margin, for clipping raw WGS84 sources cheaply.
-FRAME4326="2 53.5 33 71.5"
+# All country-specific facts (frame, EPSG, extract URL, admin levels, DEM sweep)
+# come from pipeline/country.json — see load-config.mjs.
+eval "$(node "$SRC/load-config.mjs" --bash)"
 
 # Simplification tiers (meters). At A1 (~1:2M) 100 m ≈ 0.05 mm — invisible in print.
 INTERVAL_PRINT=100

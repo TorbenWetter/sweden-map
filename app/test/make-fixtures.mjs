@@ -88,18 +88,45 @@ write('ne-borders.json', neBorders);
 write('sea-labels.json', seaLabels);
 write('neighbor-places.json', neighborPlaces);
 
-const info = { file: 'x', bytes: 1, features: 1, bbox: null };
+const info = (file) => ({ file, bytes: 1, features: 1, bbox: null });
+const SINGLE_FILES = {
+  places: 'places.json',
+  graticule: 'graticule.json',
+  neBorders: 'ne-borders.json',
+  seaLabels: 'sea-labels.json',
+  neighborPlaces: 'neighbor-places.json',
+};
 const manifest = {
+  manifestVersion: 2,
   generatedAt: '2026-01-01T00:00:00.000Z',
+  country: { name: 'Sverige', code: 'SE' },
   epsg: 3006,
+  crsLabel: 'SWEREF 99 TM',
+  locale: 'sv-SE',
   frame: { xmin: 200000, ymin: 6000000, xmax: 1100000, ymax: 7700000 },
   swedenBounds: [300000, 6200000, 980000, 7500000],
-  layers: Object.fromEntries(
-    [...Object.keys(tiered), 'places', 'graticule', 'neBorders', 'seaLabels', 'neighborPlaces'].map((id) => [
-      id,
-      { preview: info, print: info },
-    ]),
-  ),
+  placePriority: ['Stockholm', 'Göteborg', 'Malmö'],
+  layerLabels: { sweden: 'Sweden', lan: 'Län borders', kommun: 'Kommun borders' },
+  legendLabels: { roads: 'Större väg', railways: 'Järnväg', lakes: 'Sjö', parks: 'Nationalpark', lan: 'Länsgräns', kommun: 'Kommungräns', places: 'Tätort' },
+  layers: {
+    ...Object.fromEntries(
+      Object.keys(tiered).map((id) => [
+        id,
+        {
+          tiered: true,
+          ...(id === 'lan' || id === 'kommun' ? { mesh: true } : {}),
+          preview: info(`${id}.preview.json`),
+          print: info(`${id}.print.json`),
+        },
+      ]),
+    ),
+    ...Object.fromEntries(
+      Object.entries(SINGLE_FILES).map(([id, file]) => [
+        id,
+        { tiered: false, preview: info(file), print: info(file) },
+      ]),
+    ),
+  },
   hillshade: null,
   attribution: ['Fixture data — not a real map'],
 };

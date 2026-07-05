@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { LAYER_LABELS, RAIL_USAGES, ROAD_CLASSES, type Dash, type LayerId, type LayerState, type Recipe } from '../types';
+import { RAIL_USAGES, ROAD_CLASSES, type Dash, type LayerId, type LayerState, type Recipe } from '../types';
 import { layerOf, useStudio } from '../state/store';
 import { CheckRow, ColorField, Field, NumberField, RangeField, Section, SelectField } from './controls';
 
@@ -41,6 +41,7 @@ function LayerTab() {
   const recipe = useStudio((s) => s.recipe);
   const selected = useStudio((s) => s.selected);
   const update = useStudio((s) => s.update);
+  const layerLabels = useStudio((s) => s.layerLabels);
   const layer = selected ? layerOf(recipe, selected) : undefined;
 
   if (!layer) {
@@ -59,7 +60,7 @@ function LayerTab() {
 
   return (
     <>
-      <div className="inspector-title">{LAYER_LABELS[layer.id]}</div>
+      <div className="inspector-title">{layerLabels[layer.id]}</div>
       <Section title="Style">
         <CheckRow label="Visible" checked={layer.visible} onChange={(v) => patch((l) => (l.visible = v))} />
         <RangeField label="Opacity" value={layer.opacity} min={0} max={1} step={0.01} display={(v) => `${Math.round(v * 100)}%`} onChange={(v) => patch((l) => (l.opacity = v))} />

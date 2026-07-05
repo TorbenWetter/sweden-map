@@ -1,6 +1,6 @@
 import { feature, mesh } from 'topojson-client';
 import { useEffect, useState } from 'react';
-import type { Manifest, Tier } from '../types';
+import type { LayerEntry, Manifest, Tier } from '../types';
 
 type Topology = any;
 type GeometryCollection = any;
@@ -18,8 +18,8 @@ export interface MapData {
   manifest: Manifest;
   /** per layer id: FeatureCollection */
   fc: Record<string, FC>;
-  /** interior boundary meshes for admin layers */
-  meshes: { lan?: any; kommun?: any };
+  /** interior boundary meshes for layers flagged mesh in the manifest */
+  meshes: Record<string, any>;
   tier: Tier;
 }
 
@@ -46,37 +46,31 @@ function toFC(topo: Topology): FC {
   return feature(topo, firstObject(topo)) as unknown as FC;
 }
 
-/** Layers that exist at a single tier only. */
-const SINGLE_TIER: Record<string, string> = {
-  places: 'places.json',
-  graticule: 'graticule.json',
-  neBorders: 'ne-borders.json',
-  seaLabels: 'sea-labels.json',
-  neighborPlaces: 'neighbor-places.json',
-};
+function isTiered(entry: LayerEntry): boolean {
+  return entry.tiered ?? entry.preview.file !== entry.print.file;
+}
 
-const TIERED = ['sweden', 'neighbors', 'lan', 'kommun', 'lakes', 'rivers', 'roads', 'railways', 'parks'];
+function wantsMesh(id: string, entry: LayerEntry): boolean {
+  return entry.mesh ?? (id === 'lan' || id === 'kommun');
+}
 
 export async function loadMapData(tier: Tier): Promise<MapData> {
   const manifest = (await fetchJson('/data/manifest.json')) as Manifest;
   const fc: Record<string, FC> = {};
   const meshes: MapData['meshes'] = {};
 
-  await Promise.all([
-    ...TIERED.map(async (id) => {
-      if (!manifest.layers[id]?.[tier]) return;
-      const topo = (await fetchJson(`/data/${id}.${tier}.json`)) as Topology;
-      fc[id] = toFC(topo);
-      if (id === 'lan' || id === 'kommun') {
-        meshes[id] = mesh(topo, firstObject(topo), (a, b) => a !== b);
-      }
-    }),
-    ...Object.entries(SINGLE_TIER).map(async ([id, file]) => {
-      if (!manifest.layers[id]) return;
+  // The manifest is the layer inventory — nothing here is country- or layer-specific.
+  await Promise.all(
+    Object.entries(manifest.layers).map(async ([id, entry]) => {
+      if (!entry) return;
+      const file = (isTiered(entry) ? entry[tier] : entry.preview).file;
       const topo = (await fetchJson(`/data/${file}`)) as Topology;
       fc[id] = toFC(topo);
+      if (wantsMesh(id, entry)) {
+        meshes[id] = mesh(topo, firstObject(topo), (a: any, b: any) => a !== b);
+      }
     }),
-  ]);
+  );
 
   return { manifest, fc, meshes, tier };
 }

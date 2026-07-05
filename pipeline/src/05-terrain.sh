@@ -6,12 +6,12 @@ source "$(dirname "${BASH_SOURCE[0]}")/env.sh"
 DEM_DIR="$RAW/dem"
 mkdir -p "$DEM_DIR"
 
-# The projected frame spans ~3–31°E across its latitude range — sweep wide; sea tiles 404 cheaply.
-log "probing + fetching GLO-90 tiles (lat 54–69, lon 3–31)…"
+# The projected frame spans far wider in lon than the country itself — sweep per config; sea tiles 404 cheaply.
+log "probing + fetching GLO-90 tiles (lat $DEM_LAT_MIN–$DEM_LAT_MAX, lon $DEM_LON_MIN–$DEM_LON_MAX)…"
 URL_LIST="$WORK/dem-urls.txt"
 : > "$URL_LIST"
-for LAT in $(seq 54 69); do
-  for LON in $(seq 3 31); do
+for LAT in $(seq "$DEM_LAT_MIN" "$DEM_LAT_MAX"); do
+  for LON in $(seq "$DEM_LON_MIN" "$DEM_LON_MAX"); do
     LON3=$(printf '%03d' "$LON")
     NAME="Copernicus_DSM_COG_30_N${LAT}_00_E${LON3}_00_DEM"
     echo "https://copernicus-dem-90m.s3.amazonaws.com/${NAME}/${NAME}.tif" >> "$URL_LIST"
@@ -22,9 +22,9 @@ COUNT=$(ls "$DEM_DIR"/*.tif 2>/dev/null | wc -l | tr -d ' ')
 log "have $COUNT DEM tiles"
 [ "$COUNT" -gt 0 ] || { log "no DEM tiles — skipping terrain"; exit 0; }
 
-log "building VRT + warping to EPSG:3006 @120 m…"
+log "building VRT + warping to EPSG:$EPSG @120 m…"
 gdalbuildvrt -q "$WORK/dem.vrt" "$DEM_DIR"/*.tif
-gdalwarp -q -overwrite -t_srs EPSG:3006 \
+gdalwarp -q -overwrite -t_srs "EPSG:$EPSG" \
   -te $FRAME_XMIN $FRAME_YMIN $FRAME_XMAX $FRAME_YMAX \
   -tr 120 120 -r bilinear -co COMPRESS=DEFLATE -co TILED=YES \
   "$WORK/dem.vrt" "$WORK/dem3006.tif"

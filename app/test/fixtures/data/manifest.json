@@ -1,6 +1,13 @@
 {
+  "manifestVersion": 2,
   "generatedAt": "2026-01-01T00:00:00.000Z",
+  "country": {
+    "name": "Sverige",
+    "code": "SE"
+  },
   "epsg": 3006,
+  "crsLabel": "SWEREF 99 TM",
+  "locale": "sv-SE",
   "frame": {
     "xmin": 200000,
     "ymin": 6000000,
@@ -13,198 +20,233 @@
     980000,
     7500000
   ],
+  "placePriority": [
+    "Stockholm",
+    "Göteborg",
+    "Malmö"
+  ],
+  "layerLabels": {
+    "sweden": "Sweden",
+    "lan": "Län borders",
+    "kommun": "Kommun borders"
+  },
+  "legendLabels": {
+    "roads": "Större väg",
+    "railways": "Järnväg",
+    "lakes": "Sjö",
+    "parks": "Nationalpark",
+    "lan": "Länsgräns",
+    "kommun": "Kommungräns",
+    "places": "Tätort"
+  },
   "layers": {
     "sweden": {
+      "tiered": true,
       "preview": {
-        "file": "x",
+        "file": "sweden.preview.json",
         "bytes": 1,
         "features": 1,
         "bbox": null
       },
       "print": {
-        "file": "x",
+        "file": "sweden.print.json",
         "bytes": 1,
         "features": 1,
         "bbox": null
       }
     },
     "neighbors": {
+      "tiered": true,
       "preview": {
-        "file": "x",
+        "file": "neighbors.preview.json",
         "bytes": 1,
         "features": 1,
         "bbox": null
       },
       "print": {
-        "file": "x",
+        "file": "neighbors.print.json",
         "bytes": 1,
         "features": 1,
         "bbox": null
       }
     },
     "lan": {
+      "tiered": true,
+      "mesh": true,
       "preview": {
-        "file": "x",
+        "file": "lan.preview.json",
         "bytes": 1,
         "features": 1,
         "bbox": null
       },
       "print": {
-        "file": "x",
+        "file": "lan.print.json",
         "bytes": 1,
         "features": 1,
         "bbox": null
       }
     },
     "kommun": {
+      "tiered": true,
+      "mesh": true,
       "preview": {
-        "file": "x",
+        "file": "kommun.preview.json",
         "bytes": 1,
         "features": 1,
         "bbox": null
       },
       "print": {
-        "file": "x",
+        "file": "kommun.print.json",
         "bytes": 1,
         "features": 1,
         "bbox": null
       }
     },
     "lakes": {
+      "tiered": true,
       "preview": {
-        "file": "x",
+        "file": "lakes.preview.json",
         "bytes": 1,
         "features": 1,
         "bbox": null
       },
       "print": {
-        "file": "x",
+        "file": "lakes.print.json",
         "bytes": 1,
         "features": 1,
         "bbox": null
       }
     },
     "rivers": {
+      "tiered": true,
       "preview": {
-        "file": "x",
+        "file": "rivers.preview.json",
         "bytes": 1,
         "features": 1,
         "bbox": null
       },
       "print": {
-        "file": "x",
+        "file": "rivers.print.json",
         "bytes": 1,
         "features": 1,
         "bbox": null
       }
     },
     "roads": {
+      "tiered": true,
       "preview": {
-        "file": "x",
+        "file": "roads.preview.json",
         "bytes": 1,
         "features": 1,
         "bbox": null
       },
       "print": {
-        "file": "x",
+        "file": "roads.print.json",
         "bytes": 1,
         "features": 1,
         "bbox": null
       }
     },
     "railways": {
+      "tiered": true,
       "preview": {
-        "file": "x",
+        "file": "railways.preview.json",
         "bytes": 1,
         "features": 1,
         "bbox": null
       },
       "print": {
-        "file": "x",
+        "file": "railways.print.json",
         "bytes": 1,
         "features": 1,
         "bbox": null
       }
     },
     "parks": {
+      "tiered": true,
       "preview": {
-        "file": "x",
+        "file": "parks.preview.json",
         "bytes": 1,
         "features": 1,
         "bbox": null
       },
       "print": {
-        "file": "x",
+        "file": "parks.print.json",
         "bytes": 1,
         "features": 1,
         "bbox": null
       }
     },
     "places": {
+      "tiered": false,
       "preview": {
-        "file": "x",
+        "file": "places.json",
         "bytes": 1,
         "features": 1,
         "bbox": null
       },
       "print": {
-        "file": "x",
+        "file": "places.json",
         "bytes": 1,
         "features": 1,
         "bbox": null
       }
     },
     "graticule": {
+      "tiered": false,
       "preview": {
-        "file": "x",
+        "file": "graticule.json",
         "bytes": 1,
         "features": 1,
         "bbox": null
       },
       "print": {
-        "file": "x",
+        "file": "graticule.json",
         "bytes": 1,
         "features": 1,
         "bbox": null
       }
     },
     "neBorders": {
+      "tiered": false,
       "preview": {
-        "file": "x",
+        "file": "ne-borders.json",
         "bytes": 1,
         "features": 1,
         "bbox": null
       },
       "print": {
-        "file": "x",
+        "file": "ne-borders.json",
         "bytes": 1,
         "features": 1,
         "bbox": null
       }
     },
     "seaLabels": {
+      "tiered": false,
       "preview": {
-        "file": "x",
+        "file": "sea-labels.json",
         "bytes": 1,
         "features": 1,
         "bbox": null
       },
       "print": {
-        "file": "x",
+        "file": "sea-labels.json",
         "bytes": 1,
         "features": 1,
         "bbox": null
       }
     },
     "neighborPlaces": {
+      "tiered": false,
       "preview": {
-        "file": "x",
+        "file": "neighbor-places.json",
         "bytes": 1,
         "features": 1,
         "bbox": null
       },
       "print": {
-        "file": "x",
+        "file": "neighbor-places.json",
         "bytes": 1,
         "features": 1,
         "bbox": null

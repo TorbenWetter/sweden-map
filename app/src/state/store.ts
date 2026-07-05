@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { LayerId, Recipe, Tier } from '../types';
+import { LAYER_LABELS, type LayerId, type Recipe, type Tier } from '../types';
 import { PRESETS, nordic } from '../presets/presets';
 
 const STORAGE_KEY = 'sweden-map-studio.recipe.v1';
@@ -33,6 +33,8 @@ interface StudioState {
   labelEdit: boolean;
   view: View | null; // null → viewport fits on next layout
   cursorEN: [number, number] | null;
+  /** chrome labels per layer; country-specific entries come from the manifest */
+  layerLabels: Record<LayerId, string>;
   past: Recipe[];
   future: Recipe[];
   transientStash: Recipe | null;
@@ -47,6 +49,7 @@ interface StudioState {
   setLabelEdit: (v: boolean) => void;
   setView: (v: View | null) => void;
   setCursorEN: (c: [number, number] | null) => void;
+  setLayerLabels: (labels: Partial<Record<LayerId, string>>) => void;
   applyPreset: (id: string) => void;
   importRecipe: (r: Recipe) => void;
 }
@@ -58,6 +61,7 @@ export const useStudio = create<StudioState>((set, get) => ({
   labelEdit: false,
   view: null,
   cursorEN: null,
+  layerLabels: { ...LAYER_LABELS },
   past: [],
   future: [],
   transientStash: null,
@@ -100,6 +104,7 @@ export const useStudio = create<StudioState>((set, get) => ({
   setLabelEdit: (labelEdit) => set({ labelEdit }),
   setView: (view) => set({ view }),
   setCursorEN: (cursorEN) => set({ cursorEN }),
+  setLayerLabels: (labels) => set({ layerLabels: { ...LAYER_LABELS, ...labels } }),
 
   applyPreset: (id) => {
     const builder = PRESETS[id];

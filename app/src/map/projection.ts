@@ -48,7 +48,7 @@ export function makeProjection(manifest: Manifest, recipe: Recipe): Projected {
   };
 }
 
-export function niceScaleText(scaleDen: number): string {
+export function niceScaleText(scaleDen: number, locale = 'sv-SE'): string {
   const rounded = Math.round(scaleDen / 1000) * 1000;
-  return `1:${rounded.toLocaleString('sv-SE').replace(/ /g, ' ')}`;
+  return `1:${rounded.toLocaleString(locale).replace(/ /g, ' ')}`;
 }

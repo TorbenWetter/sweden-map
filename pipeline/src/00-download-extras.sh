@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# Small extra downloads + unzip of the big ones fetched at session start.
+# Downloads: OSM country extract, land polygons, Natural Earth boundary lines.
 source "$(dirname "${BASH_SOURCE[0]}")/env.sh"
 
 cd "$RAW"
 
-if [ ! -f sweden-latest.osm.pbf ]; then
-  log "downloading Geofabrik Sweden extract (~800 MB)…"
-  curl -sSL -C - -o sweden-latest.osm.pbf https://download.geofabrik.de/europe/sweden-latest.osm.pbf
+if [ ! -f "$PBF_FILE" ]; then
+  log "downloading OSM extract ($EXTRACT_URL)…"
+  curl -sSL -C - -o "$PBF_FILE" "$EXTRACT_URL"
 fi
 
 if [ ! -f land-polygons-split-4326.zip ]; then

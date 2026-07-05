@@ -15,8 +15,13 @@ export default function App() {
   const undo = useStudio((s) => s.undo);
   const redo = useStudio((s) => s.redo);
   const setView = useStudio((s) => s.setView);
+  const setLayerLabels = useStudio((s) => s.setLayerLabels);
   const { data, error } = useMapData(tier);
   const [fontsReady, setFontsReady] = useState(false);
+
+  useEffect(() => {
+    if (data?.manifest.layerLabels) setLayerLabels(data.manifest.layerLabels);
+  }, [data, setLayerLabels]);
 
   useEffect(() => {
     let alive = true;
@@ -104,7 +109,12 @@ export default function App() {
         )}
         <Inspector />
       </div>
-      <StatusBar scaleDen={projected?.scaleDen ?? null} skipped={layout.skipped.length} />
+      <StatusBar
+        scaleDen={projected?.scaleDen ?? null}
+        skipped={layout.skipped.length}
+        crs={data ? `${data.manifest.crsLabel ?? `EPSG ${data.manifest.epsg}`} · EPSG:${data.manifest.epsg}` : null}
+        locale={data?.manifest.locale}
+      />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import type { PointerEvent as ReactPointerEvent } from 'react';
-import { LAYER_LABELS, type LayerId } from '../types';
+import type { LayerId } from '../types';
 import { useStudio } from '../state/store';
 
 const ROW_H = 30;
@@ -10,6 +10,7 @@ export function LayersPanel() {
   const selected = useStudio((s) => s.selected);
   const select = useStudio((s) => s.select);
   const update = useStudio((s) => s.update);
+  const layerLabels = useStudio((s) => s.layerLabels);
 
   // display order: topmost drawn first
   const display = [...recipe.layers].reverse();
@@ -75,7 +76,7 @@ export function LayersPanel() {
               >
                 {l.visible ? '●' : '○'}
               </button>
-              <span className="layer-name">{LAYER_LABELS[l.id]}</span>
+              <span className="layer-name">{layerLabels[l.id]}</span>
               <span className="layer-swatch" style={{ background: l.fill ?? l.stroke ?? 'transparent' }} />
             </div>
             {drag && drag.to === i && drag.to > drag.from ? <div className="drop-line" /> : null}

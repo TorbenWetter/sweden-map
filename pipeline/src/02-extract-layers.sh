@@ -8,21 +8,24 @@ GPKG="$WORK/osm.gpkg"
 X() { # X <out-name> <ogr2ogr args…>
   local out="$WORK/$1.geojson"; shift
   rm -f "$out"
-  ogr2ogr -f GeoJSON "$out" "$@" -t_srs EPSG:3006
+  ogr2ogr -f GeoJSON "$out" "$@" -t_srs "EPSG:$EPSG"
   log "extracted $(basename "$out")"
 }
 
+# double any apostrophes for the SQLite literal (Côte d'Ivoire etc.)
+OSM_COUNTRY_NAME_SQL=${OSM_COUNTRY_NAME//\'/\'\'}
+
 X sweden0 "$GPKG" -dialect sqlite -sql \
-  "SELECT geom FROM polys_raw WHERE boundary='administrative' AND admin_level='2' AND name='Sverige'" \
+  "SELECT geom FROM polys_raw WHERE boundary='administrative' AND admin_level='$ADMIN_COUNTRY' AND name='$OSM_COUNTRY_NAME_SQL'" \
   -nlt PROMOTE_TO_MULTI -makevalid
 
 X lan "$GPKG" -dialect sqlite -sql \
   "SELECT name, hstore_get_value(other_tags,'ref') AS ref, geom FROM polys_raw
-   WHERE boundary='administrative' AND admin_level='4'" \
+   WHERE boundary='administrative' AND admin_level='$ADMIN1'" \
   -nlt PROMOTE_TO_MULTI -makevalid
 
 X kommun "$GPKG" -dialect sqlite -sql \
-  "SELECT name, geom FROM polys_raw WHERE boundary='administrative' AND admin_level='7'" \
+  "SELECT name, geom FROM polys_raw WHERE boundary='administrative' AND admin_level='$ADMIN2'" \
   -nlt PROMOTE_TO_MULTI -makevalid
 
 X lakes "$GPKG" -dialect sqlite -sql \
@@ -62,10 +65,10 @@ X places "$GPKG" -dialect sqlite -sql \
 log "land polygons subset (this one takes a few minutes)…"
 rm -f "$WORK/land.geojson"
 ogr2ogr -f GeoJSON "$WORK/land.geojson" "$RAW/land-polygons-split-4326/land_polygons.shp" \
-  -spat $FRAME4326 -clipsrc $FRAME4326 -t_srs EPSG:3006 -makevalid
+  -spat $FRAME4326 -clipsrc $FRAME4326 -t_srs "EPSG:$EPSG" -makevalid
 
 rm -f "$WORK/ne_borders.geojson"
 ogr2ogr -f GeoJSON "$WORK/ne_borders.geojson" "$RAW/ne_borders/ne_10m_admin_0_boundary_lines_land.shp" \
-  -spat $FRAME4326 -clipsrc $FRAME4326 -t_srs EPSG:3006
+  -spat $FRAME4326 -clipsrc $FRAME4326 -t_srs "EPSG:$EPSG"
 
 log "layer extraction done."

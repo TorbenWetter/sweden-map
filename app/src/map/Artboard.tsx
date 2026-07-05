@@ -3,8 +3,8 @@ import type { PointerEvent as ReactPointerEvent } from 'react';
 import type { MapData } from './data';
 import { niceScaleText, type Projected } from './projection';
 import type { LabelLayout, PlacedLabel } from './labels';
-import { RESIDENS, cityDotMm } from './labels';
-import { LAYER_LABELS, ROAD_CLASSES, ROAD_WIDTH_FACTOR, type Dash, type LayerId, type LayerState, type Recipe } from '../types';
+import { cityDotMm } from './labels';
+import { ROAD_CLASSES, ROAD_WIDTH_FACTOR, type Dash, type LayerId, type LayerState, type Recipe } from '../types';
 
 export interface ArtboardInteractive {
   selected: LayerId | null;
@@ -94,11 +94,12 @@ export function Artboard({ recipe, data, projected, layout, hillshadeHref, inter
 
   const cityDots = useMemo(() => {
     const minPop = layerMap.places?.filters.minPopulation ?? 0;
+    const priority = new Set(data.manifest.placePriority ?? []);
     return (data.fc.places?.features ?? [])
-      .filter((f) => (f.properties.population ?? 0) >= minPop || RESIDENS.has(f.properties.name))
+      .filter((f) => (f.properties.population ?? 0) >= minPop || priority.has(f.properties.name))
       .map((f) => {
         const [x, y] = toMm(f.geometry.coordinates[0], f.geometry.coordinates[1]);
-        return { x, y, pop: f.properties.population ?? 0, name: f.properties.name as string, capital: f.properties.capital === 'yes' || f.properties.name === 'Stockholm' };
+        return { x, y, pop: f.properties.population ?? 0, name: f.properties.name as string, capital: f.properties.capital === 'yes' };
       })
       .filter((c) => c.x > inset && c.x < wMm - inset && c.y > inset && c.y < hMm - inset);
   }, [data, toMm, layerMap.places?.filters.minPopulation, inset, wMm, hMm]);
@@ -284,15 +285,16 @@ export function Artboard({ recipe, data, projected, layout, hillshadeHref, inter
   const legendItems = useMemo(() => {
     const items: Array<{ kind: 'line' | 'dash' | 'rect' | 'dot'; color: string; w?: number; label: string; dash?: Dash }> = [];
     const L = layerMap;
-    if (L.roads?.visible) items.push({ kind: 'line', color: L.roads.stroke ?? '#000', w: L.roads.strokeWidthMm, label: 'Större väg' });
-    if (L.railways?.visible) items.push({ kind: 'dash', color: L.railways.stroke ?? '#000', w: L.railways.strokeWidthMm, label: 'Järnväg', dash: L.railways.dash });
-    if (L.lakes?.visible) items.push({ kind: 'rect', color: L.lakes.fill ?? '#9cf', label: 'Sjö' });
-    if (L.parks?.visible) items.push({ kind: 'rect', color: L.parks.fill ?? '#cfc', label: 'Nationalpark' });
-    if (L.lan?.visible) items.push({ kind: 'line', color: L.lan.stroke ?? '#888', w: L.lan.strokeWidthMm, label: 'Länsgräns', dash: L.lan.dash });
-    if (L.kommun?.visible) items.push({ kind: 'line', color: L.kommun.stroke ?? '#aaa', w: L.kommun.strokeWidthMm, label: 'Kommungräns', dash: L.kommun.dash });
-    if (L.places?.visible) items.push({ kind: 'dot', color: L.places.fill ?? '#000', label: 'Tätort' });
+    const t = (key: string, fallback: string) => data.manifest.legendLabels?.[key] ?? fallback;
+    if (L.roads?.visible) items.push({ kind: 'line', color: L.roads.stroke ?? '#000', w: L.roads.strokeWidthMm, label: t('roads', 'Major road') });
+    if (L.railways?.visible) items.push({ kind: 'dash', color: L.railways.stroke ?? '#000', w: L.railways.strokeWidthMm, label: t('railways', 'Railway'), dash: L.railways.dash });
+    if (L.lakes?.visible) items.push({ kind: 'rect', color: L.lakes.fill ?? '#9cf', label: t('lakes', 'Lake') });
+    if (L.parks?.visible) items.push({ kind: 'rect', color: L.parks.fill ?? '#cfc', label: t('parks', 'National park') });
+    if (L.lan?.visible) items.push({ kind: 'line', color: L.lan.stroke ?? '#888', w: L.lan.strokeWidthMm, label: t('lan', 'Region border'), dash: L.lan.dash });
+    if (L.kommun?.visible) items.push({ kind: 'line', color: L.kommun.stroke ?? '#aaa', w: L.kommun.strokeWidthMm, label: t('kommun', 'Municipality border'), dash: L.kommun.dash });
+    if (L.places?.visible) items.push({ kind: 'dot', color: L.places.fill ?? '#000', label: t('places', 'Town') });
     return items;
-  }, [layerMap]);
+  }, [layerMap, data.manifest.legendLabels]);
 
   const scalebar = useMemo(() => {
     const target = 45; // mm
@@ -356,7 +358,7 @@ export function Artboard({ recipe, data, projected, layout, hillshadeHref, inter
               strokeWidth={0.3}
               paintOrder="stroke"
             >
-              {fu.title.sub.replace('{scale}', niceScaleText(projected.scaleDen))}
+              {fu.title.sub.replace('{scale}', niceScaleText(projected.scaleDen, data.manifest.locale))}
             </text>
           ) : null}
         </g>
@@ -430,8 +432,4 @@ export function Artboard({ recipe, data, projected, layout, hillshadeHref, inter
       ) : null}
     </g>
   );
-}
-
-export function layerDisplayName(id: LayerId): string {
-  return LAYER_LABELS[id];
 }

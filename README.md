@@ -69,3 +69,17 @@ app/            Vite + React + TS studio; public/data/ holds the generated TopoJ
 ```
 
 `pnpm pipeline` is resumable via `data/work/.done-*` markers; `FORCE=1 pnpm pipeline` re-runs everything.
+
+## Adapting to another country
+
+Every country-specific fact lives in **`pipeline/country.json`**: the Geofabrik extract URL,
+projection EPSG + CRS label, OSM country name and admin levels, the projected frame, the DEM
+tile sweep, graticule extents, curated sea/neighbor labels, always-shown priority cities, and
+the chrome/legend label strings. The pipeline reads it in every step and bakes it into
+`manifest.json`, which is where the app learns *all* of it — the app source contains no
+hardcoded country facts.
+
+To try, say, Norway: edit `country.json` (extract URL, `epsg: 25833`, `osmCountryName: "Norge"`,
+admin levels 4/7, a new frame, curated content), then `FORCE=1 pnpm pipeline`. Layer ids
+(`sweden`, `lan`, `kommun`, …) are stable slot names used by recipes — only their labels change.
+Preset titles ("SVERIGE") are design content; edit them in the Layout tab.

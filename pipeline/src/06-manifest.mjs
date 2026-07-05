@@ -1,12 +1,14 @@
-// Build app/public/data/manifest.json: layer inventory, bounds, attribution.
+// Build app/public/data/manifest.json: layer inventory, bounds, country metadata,
+// attribution. The app learns everything country-specific from this file.
 import { readFileSync, writeFileSync, statSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { config } from './load-config.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const OUT = join(ROOT, 'app', 'public', 'data');
 
-const FRAME = { xmin: 45000, ymin: 6098000, xmax: 1145000, ymax: 7707000 };
+const FRAME = config.frame;
 
 const info = (file) => {
   const p = join(OUT, file);
@@ -17,14 +19,21 @@ const info = (file) => {
   return { file, bytes: statSync(p).size, features, bbox: topo.bbox ?? null };
 };
 
-const tiered = (id) => ({ preview: info(`${id}.preview.json`), print: info(`${id}.print.json`) });
-const single = (id, file) => { const i = info(file); return i ? { preview: i, print: i } : null; };
+const tiered = (id, opts = {}) => {
+  const preview = info(`${id}.preview.json`);
+  const print = info(`${id}.print.json`);
+  return preview && print ? { tiered: true, ...opts, preview, print } : null;
+};
+const single = (id, file, opts = {}) => {
+  const i = info(file);
+  return i ? { tiered: false, ...opts, preview: i, print: i } : null;
+};
 
 const layers = {
   sweden: tiered('sweden'),
   neighbors: tiered('neighbors'),
-  lan: tiered('lan'),
-  kommun: tiered('kommun'),
+  lan: tiered('lan', { mesh: true }),
+  kommun: tiered('kommun', { mesh: true }),
   lakes: tiered('lakes'),
   rivers: tiered('rivers'),
   roads: tiered('roads'),
@@ -48,10 +57,17 @@ const hillshade = existsSync(join(OUT, 'hillshade-preview.png'))
   : null;
 
 const manifest = {
+  manifestVersion: 2,
   generatedAt: new Date().toISOString(),
-  epsg: 3006,
+  country: { name: config.name, code: config.code },
+  epsg: config.epsg,
+  crsLabel: config.crsLabel,
+  locale: config.locale,
   frame: FRAME,
   swedenBounds,
+  placePriority: config.placePriority,
+  layerLabels: config.layerLabels,
+  legendLabels: config.legendLabels,
   layers,
   hillshade,
   attribution: [

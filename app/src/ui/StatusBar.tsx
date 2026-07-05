@@ -1,7 +1,17 @@
 import { useStudio } from '../state/store';
 import { niceScaleText } from '../map/projection';
 
-export function StatusBar({ scaleDen, skipped }: { scaleDen: number | null; skipped: number }) {
+export function StatusBar({
+  scaleDen,
+  skipped,
+  crs,
+  locale,
+}: {
+  scaleDen: number | null;
+  skipped: number;
+  crs: string | null;
+  locale?: string;
+}) {
   const cursorEN = useStudio((s) => s.cursorEN);
   const tier = useStudio((s) => s.tier);
   const setTier = useStudio((s) => s.setTier);
@@ -9,11 +19,11 @@ export function StatusBar({ scaleDen, skipped }: { scaleDen: number | null; skip
 
   return (
     <footer className="statusbar">
-      <span className="badge">SWEREF 99 TM · EPSG:3006</span>
+      <span className="badge">{crs ?? '…'}</span>
       <span className="status-mono">
-        {cursorEN ? `E ${Math.round(cursorEN[0]).toLocaleString('sv-SE')}  N ${Math.round(cursorEN[1]).toLocaleString('sv-SE')}` : 'E —  N —'}
+        {cursorEN ? `E ${Math.round(cursorEN[0]).toLocaleString(locale ?? 'sv-SE')}  N ${Math.round(cursorEN[1]).toLocaleString(locale ?? 'sv-SE')}` : 'E —  N —'}
       </span>
-      <span className="status-mono">{scaleDen ? niceScaleText(scaleDen) : ''}</span>
+      <span className="status-mono">{scaleDen ? niceScaleText(scaleDen, locale) : ''}</span>
       <span className="status-mono">
         {recipe.paper.wMm}×{recipe.paper.hMm} mm
       </span>

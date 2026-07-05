@@ -20,12 +20,6 @@ export interface PlacedLabel {
   baseY: number;
 }
 
-export const RESIDENS = new Set([
-  'Stockholm', 'Göteborg', 'Malmö', 'Uppsala', 'Nyköping', 'Linköping', 'Jönköping',
-  'Växjö', 'Kalmar', 'Visby', 'Karlskrona', 'Halmstad', 'Vänersborg', 'Karlstad',
-  'Örebro', 'Västerås', 'Falun', 'Gävle', 'Härnösand', 'Östersund', 'Umeå', 'Luleå',
-]);
-
 export function citySizeMm(pop: number): number {
   if (pop >= 800000) return 3.6;
   if (pop >= 250000) return 3.1;
@@ -104,6 +98,8 @@ export function layoutLabels(
   const f = labelsLayer.filters;
   const fontScale = f.fontScale ?? 1;
   const overrides = recipe.labelOverrides;
+  // cities always shown regardless of population (county seats etc.) — from the manifest
+  const priority = new Set(data.manifest.placePriority ?? []);
 
   const inFrame = (x: number, y: number) => x > bounds.x0 && x < bounds.x1 && y > bounds.y0 && y < bounds.y1;
 
@@ -149,7 +145,7 @@ export function layoutLabels(
 
   // --- city dots are obstacles ---
   const cities = (data.fc.places?.features ?? [])
-    .filter((c) => (c.properties.population ?? 0) >= (placesLayer?.filters.minPopulation ?? 0) || RESIDENS.has(c.properties.name))
+    .filter((c) => (c.properties.population ?? 0) >= (placesLayer?.filters.minPopulation ?? 0) || priority.has(c.properties.name))
     .map((c) => {
       const [x, y] = projected.toMm(c.geometry.coordinates[0], c.geometry.coordinates[1]);
       return { f: c, x, y, pop: c.properties.population ?? 0 };
@@ -181,8 +177,8 @@ export function layoutLabels(
   };
 
   const ranked = cities
-    .filter((c) => c.pop >= minPop || RESIDENS.has(c.f.properties.name))
-    .sort((a, b) => (b.pop + (RESIDENS.has(b.f.properties.name) ? 1e6 : 0)) - (a.pop + (RESIDENS.has(a.f.properties.name) ? 1e6 : 0)));
+    .filter((c) => c.pop >= minPop || priority.has(c.f.properties.name))
+    .sort((a, b) => (b.pop + (priority.has(b.f.properties.name) ? 1e6 : 0)) - (a.pop + (priority.has(a.f.properties.name) ? 1e6 : 0)));
 
   for (const c of ranked) {
     const name = c.f.properties.name as string;
@@ -190,7 +186,7 @@ export function layoutLabels(
     const ov = overrides[id];
     if (ov?.hidden) continue;
     const size = citySizeMm(c.pop) * fontScale;
-    const weight = RESIDENS.has(name) || c.pop >= 100000 ? 600 : 500;
+    const weight = priority.has(name) || c.pop >= 100000 ? 600 : 500;
     const w = textWidthMm(name, size, false, weight);
     const r = cityDotMm(c.pop);
 

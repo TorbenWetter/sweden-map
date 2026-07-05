@@ -1,0 +1,51 @@
+{
+  "$comment": "Single source of truth for every country-specific fact. To target another country: edit this file, run FORCE=1 pnpm pipeline. Layer ids (sweden/lan/kommun/…) are stable slot names used by recipes and presets — only their labels change per country. Preset titles (SVERIGE) are design content, edited in-app.",
+  "name": "Sverige",
+  "code": "SE",
+  "epsg": 3006,
+  "crsLabel": "SWEREF 99 TM",
+  "locale": "sv-SE",
+  "extractUrl": "https://download.geofabrik.de/europe/sweden-latest.osm.pbf",
+  "osmCountryName": "Sverige",
+  "adminLevels": { "country": "2", "admin1": "4", "admin2": "7" },
+  "frame": { "xmin": 45000, "ymin": 6098000, "xmax": 1145000, "ymax": 7707000 },
+  "frame4326": [2, 53.5, 33, 71.5],
+  "graticule": { "lonMin": 4, "lonMax": 32, "latMin": 54, "latMax": 71, "stepDeg": 2, "densifyDeg": 0.25 },
+  "dem": { "latMin": 54, "latMax": 69, "lonMin": 3, "lonMax": 31 },
+  "placePriority": [
+    "Stockholm", "Göteborg", "Malmö", "Uppsala", "Nyköping", "Linköping", "Jönköping",
+    "Växjö", "Kalmar", "Visby", "Karlskrona", "Halmstad", "Vänersborg", "Karlstad",
+    "Örebro", "Västerås", "Falun", "Gävle", "Härnösand", "Östersund", "Umeå", "Luleå"
+  ],
+  "seaLabels": [
+    { "name": "Östersjön", "lon": 19.1, "lat": 56.6 },
+    { "name": "Bottenhavet", "lon": 19.8, "lat": 61.9 },
+    { "name": "Bottenviken", "lon": 22.6, "lat": 64.9 },
+    { "name": "Kattegatt", "lon": 11.35, "lat": 56.9 },
+    { "name": "Skagerrak", "lon": 9.8, "lat": 58.15 },
+    { "name": "Ålands hav", "lon": 19.4, "lat": 60.1 }
+  ],
+  "neighborPlaces": [
+    { "name": "Oslo", "lon": 10.7522, "lat": 59.9139 },
+    { "name": "Helsingfors", "lon": 24.9384, "lat": 60.1699 },
+    { "name": "København", "lon": 12.5683, "lat": 55.6761 },
+    { "name": "Trondheim", "lon": 10.3951, "lat": 63.4305 },
+    { "name": "Tallinn", "lon": 24.7536, "lat": 59.437 },
+    { "name": "Vaasa", "lon": 21.6158, "lat": 63.096 },
+    { "name": "Bodø", "lon": 14.4049, "lat": 67.28 }
+  ],
+  "layerLabels": {
+    "sweden": "Sweden",
+    "lan": "Län borders",
+    "kommun": "Kommun borders"
+  },
+  "legendLabels": {
+    "roads": "Större väg",
+    "railways": "Järnväg",
+    "lakes": "Sjö",
+    "parks": "Nationalpark",
+    "lan": "Länsgräns",
+    "kommun": "Kommungräns",
+    "places": "Tätort"
+  }
+}
