@@ -55,7 +55,7 @@ function LayerTab() {
     });
 
   const hasFill = ['sea', 'neighbors', 'sweden', 'parks', 'lakes', 'places', 'labels'].includes(layer.id);
-  const hasStroke = ['sweden', 'lakes', 'parks', 'neBorders', 'rivers', 'kommun', 'lan', 'roads', 'railways', 'graticule'].includes(layer.id);
+  const hasStroke = ['waterlines', 'sweden', 'lakes', 'parks', 'neBorders', 'rivers', 'kommun', 'lan', 'roads', 'railways', 'graticule'].includes(layer.id);
   const hasDash = ['neBorders', 'kommun', 'lan', 'railways', 'graticule'].includes(layer.id);
 
   return (
@@ -118,6 +118,13 @@ function LayerFilters({ layer, patch }: { layer: LayerState; patch: (fn: (l: Lay
               onChange={(v) => patch((l) => { (l.filters.usages ??= {})[u] = v; })}
             />
           ))}
+        </Section>
+      );
+    case 'waterlines':
+      return (
+        <Section title="Rings">
+          <RangeField label="Ring count" value={layer.filters.rings ?? 4} min={1} max={4} step={1} display={(v) => `${Math.round(v)}`} onChange={(v) => patch((l) => (l.filters.rings = Math.round(v)))} />
+          <div className="hint">Concentric coastal lines fading seaward — the classic engraved-map look.</div>
         </Section>
       );
     case 'lakes':

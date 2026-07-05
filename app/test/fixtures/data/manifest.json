@@ -192,6 +192,21 @@
         "bbox": null
       }
     },
+    "waterlines": {
+      "tiered": false,
+      "preview": {
+        "file": "waterlines.json",
+        "bytes": 1,
+        "features": 1,
+        "bbox": null
+      },
+      "print": {
+        "file": "waterlines.json",
+        "bytes": 1,
+        "features": 1,
+        "bbox": null
+      }
+    },
     "graticule": {
       "tiered": false,
       "preview": {

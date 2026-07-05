@@ -6,6 +6,7 @@ type StylePatch = Partial<Omit<LayerState, 'id' | 'filters'>> & { filters?: Laye
 
 const DEFAULT_FILTERS: Partial<Record<LayerId, LayerState['filters']>> = {
   hillshade: { blend: 'multiply' },
+  waterlines: { rings: 4 },
   roads: { classes: { motorway: true, trunk: true, primary: true, secondary: false } },
   railways: { usages: { main: true, branch: true } },
   lakes: { minAreaKm2: 8 },
@@ -25,7 +26,7 @@ const DEFAULT_FILTERS: Partial<Record<LayerId, LayerState['filters']>> = {
 /** bottom → top. Hillshade multiplies/screens over the area fills, so it sits above them
     (flat terrain = no-op) and below line work and labels. */
 const ORDER: LayerId[] = [
-  'sea', 'neighbors', 'neBorders', 'sweden', 'parks', 'lakes',
+  'sea', 'waterlines', 'neighbors', 'neBorders', 'sweden', 'parks', 'lakes',
   'rivers', 'hillshade', 'kommun', 'lan', 'roads', 'railways', 'graticule', 'places', 'labels',
 ];
 
@@ -70,6 +71,7 @@ function recipe(name: string, preset: string, layers: LayerState[], f: Partial<R
 export function nordic(): Recipe {
   return recipe('Nordic minimal', 'nordic', buildLayers({
     sea: { fill: '#DDE8EE' },
+    waterlines: { stroke: '#B9CFDC', strokeWidthMm: 0.14 },
     hillshade: { opacity: 0.15 },
     neighbors: { fill: '#ECEAE5' },
     neBorders: { stroke: '#D5D2C9', strokeWidthMm: 0.18 },
@@ -84,12 +86,13 @@ export function nordic(): Recipe {
     graticule: { stroke: '#A9BDCB', strokeWidthMm: 0.12, opacity: 0.6 },
     places: { fill: '#2E3440' },
     labels: { fill: '#2E3440', stroke: '#6E8296' },
-  }, ['kommun', 'graticule']), {});
+  }, ['kommun', 'graticule', 'waterlines']), {});
 }
 
 export function topo(): Recipe {
   return recipe('Classic topographic', 'topo', buildLayers({
     sea: { fill: '#A9D2E2' },
+    waterlines: { stroke: '#7FB5C9', strokeWidthMm: 0.14 },
     hillshade: { opacity: 0.22 },
     neighbors: { fill: '#E6E3D8' },
     neBorders: { stroke: '#B9B4A4', strokeWidthMm: 0.2 },
@@ -113,7 +116,7 @@ export function topo(): Recipe {
     graticule: { stroke: '#7FA3B5', strokeWidthMm: 0.13, opacity: 0.8 },
     places: { fill: '#1A1A1A' },
     labels: { fill: '#1A1A1A', stroke: '#3E6E85' },
-  }, []), {
+  }, ['waterlines']), {
     ink: '#1A1A1A',
     halo: '#EEF0DE',
     title: { show: true, text: 'SVERIGE', sub: 'TOPOGRAFISK ÖVERSIKT  ·  {scale}', xMm: 462, yMm: 640, sizeMm: 11.5, trackingEm: 0.3, serif: true },
@@ -123,6 +126,7 @@ export function topo(): Recipe {
 export function dark(): Recipe {
   return recipe('Dark poster', 'dark', buildLayers({
     sea: { fill: '#0B0E13' },
+    waterlines: { stroke: '#1B2430', strokeWidthMm: 0.14 },
     hillshade: { opacity: 0.22, filters: { blend: 'screen' } },
     neighbors: { fill: '#12151B' },
     neBorders: { stroke: '#242A33', strokeWidthMm: 0.18 },
@@ -137,7 +141,7 @@ export function dark(): Recipe {
     graticule: { stroke: '#26313E', strokeWidthMm: 0.12, opacity: 1 },
     places: { fill: '#E6E9EE' },
     labels: { fill: '#E6E9EE', stroke: '#5F7A8C' },
-  }, ['kommun']), {
+  }, ['kommun', 'waterlines']), {
     ink: '#E6E9EE',
     halo: '#0B0E13',
     title: { show: true, text: 'SVERIGE', sub: '59.33° N  ·  18.07° E', xMm: 462, yMm: 640, sizeMm: 12.5, trackingEm: 0.5, serif: false },
@@ -147,6 +151,7 @@ export function dark(): Recipe {
 export function vintage(): Recipe {
   return recipe('Vintage atlas', 'vintage', buildLayers({
     sea: { fill: '#C9D8D2' },
+    waterlines: { stroke: '#87A5A1', strokeWidthMm: 0.16 },
     hillshade: { opacity: 0.18 },
     neighbors: { fill: '#EAE0CC' },
     neBorders: { stroke: '#B5A88C', strokeWidthMm: 0.2 },
@@ -172,6 +177,7 @@ export function vintage(): Recipe {
 export function alpine(): Recipe {
   return recipe('Fjällrelief', 'alpine', buildLayers({
     sea: { fill: '#C9DAE3' },
+    waterlines: { stroke: '#A9C4D2', strokeWidthMm: 0.13 },
     hillshade: { opacity: 0.5 },
     neighbors: { fill: '#E9E7DE' },
     neBorders: { stroke: '#CFCABC', strokeWidthMm: 0.16 },
@@ -186,7 +192,7 @@ export function alpine(): Recipe {
     graticule: { stroke: '#A9BDCB', strokeWidthMm: 0.12, opacity: 0.6 },
     places: { fill: '#33383E' },
     labels: { fill: '#33383E', stroke: '#587488' },
-  }, ['kommun', 'graticule']), {
+  }, ['kommun', 'graticule', 'waterlines']), {
     ink: '#33383E',
     halo: '#F1EFE4',
     title: { show: true, text: 'SVERIGE', sub: 'RELIEFKARTA  ·  {scale}', xMm: 462, yMm: 640, sizeMm: 12, trackingEm: 0.4, serif: false },
@@ -197,6 +203,7 @@ export function alpine(): Recipe {
 export function blueprint(): Recipe {
   return recipe('Cyanotype', 'blueprint', buildLayers({
     sea: { fill: '#0B2E4F' },
+    waterlines: { stroke: '#2E5A80', strokeWidthMm: 0.15 },
     hillshade: { opacity: 0.16, filters: { blend: 'screen' } },
     neighbors: { fill: '#0E3254' },
     neBorders: { stroke: '#2E5A80', strokeWidthMm: 0.16 },
@@ -223,6 +230,7 @@ export function blueprint(): Recipe {
 export function aurora(): Recipe {
   return recipe('Polarnatt', 'aurora', buildLayers({
     sea: { fill: '#070B14' },
+    waterlines: { stroke: '#14202E', strokeWidthMm: 0.14 },
     hillshade: { opacity: 0.3, filters: { blend: 'screen' } },
     neighbors: { fill: '#0A0F19' },
     neBorders: { stroke: '#1A2330', strokeWidthMm: 0.16 },
@@ -237,7 +245,7 @@ export function aurora(): Recipe {
     graticule: { stroke: '#17222E', strokeWidthMm: 0.12, opacity: 1 },
     places: { fill: '#E7F4EC' },
     labels: { fill: '#E7F4EC', stroke: '#55829B' },
-  }, ['kommun', 'graticule']), {
+  }, ['kommun', 'graticule', 'waterlines']), {
     ink: '#CFE6D8',
     halo: '#070B14',
     title: { show: true, text: 'SVERIGE', sub: 'POLARNATT  ·  {scale}', xMm: 462, yMm: 640, sizeMm: 12.5, trackingEm: 0.55, serif: false },
@@ -249,6 +257,7 @@ export function aurora(): Recipe {
 export function flag(): Recipe {
   return recipe('Blågul', 'flag', buildLayers({
     sea: { fill: '#006AA7' },
+    waterlines: { stroke: '#1573AD', strokeWidthMm: 0.15 },
     hillshade: { opacity: 0.1 },
     neighbors: { fill: '#1573AD' },
     neBorders: { stroke: '#2E81B5', strokeWidthMm: 0.16 },
@@ -266,7 +275,7 @@ export function flag(): Recipe {
       fill: '#003A63', stroke: '#CFE3F0',
       filters: { labelMinPopulation: 300000, fontScale: 1.15, seaLabels: false, lakeLabels: false, neighborLabels: false },
     },
-  }, ['kommun', 'lan', 'graticule', 'parks', 'neBorders', 'rivers', 'roads', 'railways']), {
+  }, ['kommun', 'lan', 'graticule', 'parks', 'neBorders', 'rivers', 'roads', 'railways', 'waterlines']), {
     ink: '#FFFFFF',
     halo: '#FECC02',
     title: { show: true, text: 'SVERIGE', sub: '{scale}', xMm: 462, yMm: 640, sizeMm: 14, trackingEm: 0.5, serif: false },
@@ -279,6 +288,7 @@ export function flag(): Recipe {
 export function mono(): Recipe {
   return recipe('Etsning', 'mono', buildLayers({
     sea: { fill: '#EFEFEC' },
+    waterlines: { stroke: '#9A9A94', strokeWidthMm: 0.13 },
     hillshade: { opacity: 0.25 },
     neighbors: { fill: '#F6F6F3' },
     neBorders: { stroke: '#B9B9B2', strokeWidthMm: 0.14 },
@@ -304,6 +314,7 @@ export function mono(): Recipe {
 export function retro(): Recipe {
   return recipe('Sextiotal', 'retro', buildLayers({
     sea: { fill: '#8FC1BD' },
+    waterlines: { stroke: '#6FA39E', strokeWidthMm: 0.15 },
     hillshade: { opacity: 0.15 },
     neighbors: { fill: '#E4D9C0' },
     neBorders: { stroke: '#C9BCA0', strokeWidthMm: 0.18 },

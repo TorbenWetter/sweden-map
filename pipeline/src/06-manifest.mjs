@@ -39,6 +39,7 @@ const layers = {
   roads: tiered('roads'),
   railways: tiered('railways'),
   parks: tiered('parks'),
+  waterlines: single('waterlines', 'waterlines.json'),
   places: single('places', 'places.json'),
   graticule: single('graticule', 'graticule.json'),
   neBorders: single('neBorders', 'ne-borders.json'),

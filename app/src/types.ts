@@ -2,6 +2,7 @@ export type Tier = 'preview' | 'print';
 
 export type LayerId =
   | 'sea'
+  | 'waterlines'
   | 'hillshade'
   | 'neighbors'
   | 'neBorders'
@@ -42,6 +43,8 @@ export interface LayerFilters {
   neighborLabels?: boolean;
   /** hillshade: multiply darkens (light themes), screen glows inverted relief (dark themes) */
   blend?: 'multiply' | 'screen';
+  /** waterlines: how many concentric rings render (1–4) */
+  rings?: number;
 }
 
 export interface ClassStyle {
@@ -153,6 +156,7 @@ export interface Manifest {
 /** Defaults; country-specific entries are overridden by manifest.layerLabels. */
 export const LAYER_LABELS: Record<LayerId, string> = {
   sea: 'Sea',
+  waterlines: 'Waterlines',
   hillshade: 'Terrain relief',
   neighbors: 'Neighbor land',
   neBorders: 'Neighbor borders',

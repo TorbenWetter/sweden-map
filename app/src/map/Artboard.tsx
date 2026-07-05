@@ -52,6 +52,13 @@ export function Artboard({ recipe, data, projected, layout, hillshadeHref, inter
   const dNeighbors = useMemo(() => (data.fc.neighbors ? path(data.fc.neighbors as any) ?? '' : ''), [data, path]);
   const dNeBorders = useMemo(() => (data.fc.neBorders ? path(data.fc.neBorders as any) ?? '' : ''), [data, path]);
   const dGraticule = useMemo(() => (data.fc.graticule ? path(data.fc.graticule as any) ?? '' : ''), [data, path]);
+  const dWaterlineRings = useMemo(() => {
+    if (!data.fc.waterlines) return [] as string[];
+    return [1, 2, 3, 4].map((ring) => {
+      const feats = data.fc.waterlines.features.filter((f) => f.properties.ring === ring);
+      return feats.length ? path({ type: 'FeatureCollection', features: feats } as any) ?? '' : '';
+    });
+  }, [data, path]);
   const dLan = useMemo(() => (data.meshes.lan ? path(data.meshes.lan) ?? '' : ''), [data, path]);
   const dKommun = useMemo(() => (data.meshes.kommun ? path(data.meshes.kommun) ?? '' : ''), [data, path]);
 
@@ -128,6 +135,28 @@ export function Artboard({ recipe, data, projected, layout, hillshadeHref, inter
     switch (l.id) {
       case 'sea':
         return <rect {...common} data-testid="sea" x={clipX} y={clipX} width={clipW} height={clipH} fill={l.fill} {...click('sea')} />;
+      case 'waterlines': {
+        const rings = Math.max(1, Math.min(4, l.filters.rings ?? 4));
+        const ringOpacity = [0.6, 0.42, 0.28, 0.16];
+        return (
+          <g {...common} key={l.id} {...click('waterlines')}>
+            {dWaterlineRings.map((d, idx) =>
+              idx < rings && d ? (
+                <path
+                  key={idx}
+                  d={d}
+                  fill="none"
+                  stroke={l.stroke}
+                  strokeWidth={l.strokeWidthMm ?? 0.14}
+                  opacity={ringOpacity[idx]}
+                  strokeLinejoin="round"
+                  strokeLinecap="round"
+                />
+              ) : null,
+            )}
+          </g>
+        );
+      }
       case 'hillshade':
         if (!hillshadeHref || !data.manifest.hillshade) return null;
         {

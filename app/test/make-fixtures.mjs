@@ -64,6 +64,19 @@ const places = fc([
   feat(point(430000, 6210000), { name: 'Malmö', place: 'city', population: 325069 }),
   feat(point(690000, 7480000), { name: 'Kiruna', place: 'town', population: 17002 }),
 ]);
+const waterlines = fc([1, 2, 3, 4].map((ring) =>
+  feat(
+    {
+      type: 'LineString',
+      coordinates: [
+        [300000 - ring * 8000, 6200000 - ring * 8000],
+        [900000 + ring * 8000, 6200000 - ring * 8000],
+        [900000 + ring * 8000, 7500000 + ring * 8000],
+      ],
+    },
+    { ring },
+  ),
+));
 const graticule = fc([
   feat(line([[250000, 6500000], [1050000, 6500000]]), { axis: 'parallel', deg: 58 }),
   feat(line([[600000, 6050000], [600000, 7650000]]), { axis: 'meridian', deg: 16 }),
@@ -83,6 +96,7 @@ for (const [id, collection] of Object.entries(tiered)) {
   write(`${id}.preview.json`, collection);
 }
 write('places.json', places);
+write('waterlines.json', waterlines);
 write('graticule.json', graticule);
 write('ne-borders.json', neBorders);
 write('sea-labels.json', seaLabels);
@@ -91,6 +105,7 @@ write('neighbor-places.json', neighborPlaces);
 const info = (file) => ({ file, bytes: 1, features: 1, bbox: null });
 const SINGLE_FILES = {
   places: 'places.json',
+  waterlines: 'waterlines.json',
   graticule: 'graticule.json',
   neBorders: 'ne-borders.json',
   seaLabels: 'sea-labels.json',

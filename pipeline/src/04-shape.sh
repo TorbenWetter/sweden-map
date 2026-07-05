@@ -42,11 +42,14 @@ for T in print preview; do
 done
 
 # --- lakes: area attribute → filter ≥1 km² ---
+# Second clip (by land) drops sea bays that OSM tags natural=water without water=lake:
+# real lakes lie inside the landmass, bays lie outside it.
 for T in print preview; do
   IV=$(tier $T)
   log "lakes ($T)…"
   "$MS" "$WORK/lakes.geojson" \
     -clip "$WORK/sweden0.geojson" \
+    -clip "$WORK/land.$T.geojson" \
     -each 'area_km2=Math.round(this.area/1e4)/100' \
     -filter 'area_km2>=1' \
     -simplify weighted interval=$IV keep-shapes \
@@ -105,6 +108,23 @@ for T in print preview; do
     -filter-fields name,kind,area_km2 \
     -o format=topojson "$OUT/parks.$T.json"
 done
+
+# --- waterlines: concentric coastal rings (vintage/etching looks), buffered seaward ---
+log "waterlines…"
+WL_DISTS=(1600 3400 5600 8200)
+WL_FILES=()
+for i in "${!WL_DISTS[@]}"; do
+  D=${WL_DISTS[$i]}
+  RING=$((i + 1))
+  ogr2ogr -f GeoJSON "$WORK/waterline_$RING.geojson" "$WORK/land.preview.geojson" \
+    -dialect sqlite -sql "SELECT $RING AS ring, ST_Boundary(ST_Buffer(geometry, $D)) AS geometry FROM \"land.preview\""
+  WL_FILES+=("$WORK/waterline_$RING.geojson")
+done
+"$MS" -i "${WL_FILES[@]}" combine-files \
+  -merge-layers force \
+  -clip bbox=$FRAME_BBOX \
+  -simplify weighted interval=250 \
+  -o format=topojson "$OUT/waterlines.json"
 
 # --- point/line layers without tiers ---
 log "places, graticule, ne borders, labels…"
