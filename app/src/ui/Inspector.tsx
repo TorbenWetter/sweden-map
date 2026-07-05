@@ -54,8 +54,8 @@ function LayerTab() {
       if (t) fn(t);
     });
 
-  const hasFill = ['sea', 'neighbors', 'sweden', 'parks', 'lakes', 'places', 'labels'].includes(layer.id);
-  const hasStroke = ['waterlines', 'sweden', 'lakes', 'parks', 'neBorders', 'rivers', 'kommun', 'lan', 'roads', 'railways', 'graticule'].includes(layer.id);
+  const hasFill = ['sea', 'bathymetry', 'neighbors', 'sweden', 'parks', 'lakes', 'places', 'labels'].includes(layer.id);
+  const hasStroke = ['waterlines', 'contours', 'sweden', 'lakes', 'parks', 'neBorders', 'rivers', 'kommun', 'lan', 'roads', 'railways', 'graticule'].includes(layer.id);
   const hasDash = ['neBorders', 'kommun', 'lan', 'railways', 'graticule'].includes(layer.id);
 
   return (
@@ -66,7 +66,7 @@ function LayerTab() {
         <RangeField label="Opacity" value={layer.opacity} min={0} max={1} step={0.01} display={(v) => `${Math.round(v * 100)}%`} onChange={(v) => patch((l) => (l.opacity = v))} />
         {hasFill ? (
           <ColorField
-            label={layer.id === 'places' ? 'Dot color' : layer.id === 'labels' ? 'Text color' : 'Fill'}
+            label={layer.id === 'places' ? 'Dot color' : layer.id === 'labels' ? 'Text color' : layer.id === 'bathymetry' ? 'Deep water' : 'Fill'}
             value={layer.fill ?? '#000000'}
             onChange={(v) => patch((l) => (l.fill = v))}
           />
@@ -118,6 +118,34 @@ function LayerFilters({ layer, patch }: { layer: LayerState; patch: (fn: (l: Lay
               onChange={(v) => patch((l) => { (l.filters.usages ??= {})[u] = v; })}
             />
           ))}
+        </Section>
+      );
+    case 'bathymetry':
+      return (
+        <Section title="Depth shading">
+          <div className="hint">Five depth bands shade from the sea color toward the deep-water color above.</div>
+        </Section>
+      );
+    case 'contours':
+      return (
+        <Section title="Contours">
+          <SelectField
+            label="Interval"
+            value={String(layer.filters.intervalM ?? 400) as any}
+            options={[
+              { value: '200', label: '200 m' },
+              { value: '400', label: '400 m' },
+              { value: '600', label: '600 m' },
+              { value: '800', label: '800 m' },
+              { value: '1000', label: '1000 m' },
+            ]}
+            onChange={(v) => patch((l) => (l.filters.intervalM = Number(v)))}
+          />
+          <CheckRow
+            label="Bold index contours (1000 m)"
+            checked={(layer.filters.boldEveryM ?? 0) > 0}
+            onChange={(v) => patch((l) => (l.filters.boldEveryM = v ? 1000 : 0))}
+          />
         </Section>
       );
     case 'waterlines':

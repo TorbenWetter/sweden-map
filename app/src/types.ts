@@ -2,8 +2,10 @@ export type Tier = 'preview' | 'print';
 
 export type LayerId =
   | 'sea'
+  | 'bathymetry'
   | 'waterlines'
   | 'hillshade'
+  | 'contours'
   | 'neighbors'
   | 'neBorders'
   | 'sweden'
@@ -45,6 +47,10 @@ export interface LayerFilters {
   blend?: 'multiply' | 'screen';
   /** waterlines: how many concentric rings render (1–4) */
   rings?: number;
+  /** contours: render only elevations divisible by this (m) */
+  intervalM?: number;
+  /** contours: bolden index contours at this interval (m), 0 = off */
+  boldEveryM?: number;
 }
 
 export interface ClassStyle {
@@ -156,8 +162,10 @@ export interface Manifest {
 /** Defaults; country-specific entries are overridden by manifest.layerLabels. */
 export const LAYER_LABELS: Record<LayerId, string> = {
   sea: 'Sea',
+  bathymetry: 'Sea depth',
   waterlines: 'Waterlines',
   hillshade: 'Terrain relief',
+  contours: 'Contour lines',
   neighbors: 'Neighbor land',
   neBorders: 'Neighbor borders',
   sweden: 'Sweden',

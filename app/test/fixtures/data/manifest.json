@@ -177,6 +177,21 @@
         "bbox": null
       }
     },
+    "contours": {
+      "tiered": true,
+      "preview": {
+        "file": "contours.preview.json",
+        "bytes": 1,
+        "features": 1,
+        "bbox": null
+      },
+      "print": {
+        "file": "contours.print.json",
+        "bytes": 1,
+        "features": 1,
+        "bbox": null
+      }
+    },
     "places": {
       "tiered": false,
       "preview": {
@@ -202,6 +217,21 @@
       },
       "print": {
         "file": "waterlines.json",
+        "bytes": 1,
+        "features": 1,
+        "bbox": null
+      }
+    },
+    "bathymetry": {
+      "tiered": false,
+      "preview": {
+        "file": "bathymetry.json",
+        "bytes": 1,
+        "features": 1,
+        "bbox": null
+      },
+      "print": {
+        "file": "bathymetry.json",
         "bytes": 1,
         "features": 1,
         "bbox": null

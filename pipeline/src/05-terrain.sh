@@ -7,7 +7,7 @@ DEM_DIR="$RAW/dem"
 mkdir -p "$DEM_DIR"
 
 # The projected frame spans far wider in lon than the country itself — sweep per config; sea tiles 404 cheaply.
-log "probing + fetching GLO-90 tiles (lat $DEM_LAT_MIN–$DEM_LAT_MAX, lon $DEM_LON_MIN–$DEM_LON_MAX)…"
+log "probing + fetching GLO-90 tiles (lat ${DEM_LAT_MIN}-${DEM_LAT_MAX}, lon ${DEM_LON_MIN}-${DEM_LON_MAX})..."
 URL_LIST="$WORK/dem-urls.txt"
 : > "$URL_LIST"
 for LAT in $(seq "$DEM_LAT_MIN" "$DEM_LAT_MAX"); do
@@ -40,5 +40,21 @@ log "exporting PNGs…"
 gdal_translate -q -of PNG -outsize 0 2000 "$WORK/hillshade.tif" "$OUT/hillshade-preview.png"
 gdal_translate -q -of PNG -outsize 0 9600 "$WORK/hillshade.tif" "$OUT/hillshade-print.png"
 rm -f "$OUT"/hillshade-*.png.aux.xml
+
+log "contours (200 m base interval)…"
+rm -f "$WORK/contours.gpkg" "$WORK/contours.geojson"
+gdal_contour -q -i 200 -a elev "$WORK/dem3006.tif" "$WORK/contours.gpkg" -nln contours
+# pre-simplify + drop sea level in ogr before the big GeoJSON materializes
+ogr2ogr -f GeoJSON "$WORK/contours.geojson" "$WORK/contours.gpkg" contours \
+  -where "elev > 0" -simplify 100
+
+for T in print preview; do
+  IV=$([ "$T" = print ] && echo 150 || echo 450)
+  log "contours ($T)…"
+  "$MAPSHAPER" "$WORK/contours.geojson" \
+    -simplify weighted interval=$IV \
+    -filter-fields elev \
+    -o format=topojson "$OUT/contours.$T.json"
+done
 
 log "terrain done."

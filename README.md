@@ -53,7 +53,8 @@ Its blend mode is switchable: *multiply* darkens (light themes), *screen* invert
 | [Geofabrik Sweden extract](https://download.geofabrik.de/europe/sweden.html) (OSM) | borders, lakes, rivers, roads, railways, parks, places | ODbL — keep the attribution line on published posters |
 | [osmdata land polygons](https://osmdata.openstreetmap.de/) | coastline & islands | ODbL |
 | Natural Earth 10m | neighbor national borders | public domain |
-| Copernicus DEM GLO-90 | hillshade | free, © ESA attribution |
+| Copernicus DEM GLO-90 | hillshade, contour lines | free, © ESA attribution |
+| [NOAA ETOPO 2022](https://www.ncei.noaa.gov/products/etopo-global-relief-model) | bathymetry depth bands | public domain, attribution appreciated |
 
 Lantmäteriet's CC0 Topografi products (Geotorget account required) can later replace
 borders/railways — drop the GeoPackage layers into the pipeline and re-run.

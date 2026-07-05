@@ -64,6 +64,12 @@ const places = fc([
   feat(point(430000, 6210000), { name: 'Malmö', place: 'city', population: 325069 }),
   feat(point(690000, 7480000), { name: 'Kiruna', place: 'town', population: 17002 }),
 ]);
+const bathymetry = fc([20, 50, 100, 200, 500].map((depth, i) =>
+  feat(rect(940000 + i * 2000, 6300000, 1060000 - i * 2000, 7400000 - i * 30000), { depth }),
+));
+const contours = fc([200, 400, 600, 1000].map((elev) =>
+  feat(line([[320000 + elev * 20, 6900000], [380000 + elev * 20, 7300000]]), { elev }),
+));
 const waterlines = fc([1, 2, 3, 4].map((ring) =>
   feat(
     {
@@ -89,7 +95,7 @@ const seaLabels = fc([
 const neighborPlaces = fc([feat(point(230000, 6950000), { name: 'Oslo' })]);
 
 const tiered = {
-  sweden, neighbors, lan, kommun, lakes, rivers, roads, railways, parks,
+  sweden, neighbors, lan, kommun, lakes, rivers, roads, railways, parks, contours,
 };
 for (const [id, collection] of Object.entries(tiered)) {
   write(`${id}.print.json`, collection);
@@ -97,6 +103,7 @@ for (const [id, collection] of Object.entries(tiered)) {
 }
 write('places.json', places);
 write('waterlines.json', waterlines);
+write('bathymetry.json', bathymetry);
 write('graticule.json', graticule);
 write('ne-borders.json', neBorders);
 write('sea-labels.json', seaLabels);
@@ -106,6 +113,7 @@ const info = (file) => ({ file, bytes: 1, features: 1, bbox: null });
 const SINGLE_FILES = {
   places: 'places.json',
   waterlines: 'waterlines.json',
+  bathymetry: 'bathymetry.json',
   graticule: 'graticule.json',
   neBorders: 'ne-borders.json',
   seaLabels: 'sea-labels.json',

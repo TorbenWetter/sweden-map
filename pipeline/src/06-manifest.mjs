@@ -30,6 +30,8 @@ const single = (id, file, opts = {}) => {
 };
 
 const layers = {
+  bathymetry: single('bathymetry', 'bathymetry.json'),
+  contours: tiered('contours'),
   sweden: tiered('sweden'),
   neighbors: tiered('neighbors'),
   lan: tiered('lan', { mesh: true }),
@@ -74,6 +76,7 @@ const manifest = {
   attribution: [
     '© OpenStreetMap contributors (ODbL)',
     ...(hillshade ? ['Terrain: Copernicus DEM © ESA'] : []),
+    ...(layers.bathymetry ? ['Bathymetry: NOAA ETOPO 2022'] : []),
     'Natural Earth',
   ],
 };

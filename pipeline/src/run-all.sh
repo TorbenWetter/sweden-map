@@ -20,6 +20,7 @@ step extract  bash "$SRC/02-extract-layers.sh"
 step curated  node "$SRC/03-curated.mjs"
 step shape    bash "$SRC/04-shape.sh"
 step terrain  bash "$SRC/05-terrain.sh"
+step bathy    bash "$SRC/05b-bathymetry.sh"
 node "$SRC/06-manifest.mjs"
 
 log "pipeline complete ✓"

@@ -22,6 +22,17 @@ export interface ArtboardProps {
   interactive?: ArtboardInteractive;
 }
 
+function lerpHex(a: string, b: string, t: number): string {
+  const pa = a.match(/^#(..)(..)(..)$/i);
+  const pb = b.match(/^#(..)(..)(..)$/i);
+  if (!pa || !pb) return b;
+  const mix = (i: number) =>
+    Math.round(parseInt(pa[i], 16) + (parseInt(pb[i], 16) - parseInt(pa[i], 16)) * t)
+      .toString(16)
+      .padStart(2, '0');
+  return `#${mix(1)}${mix(2)}${mix(3)}`;
+}
+
 function dashArray(dash: Dash | undefined, w: number): string | undefined {
   switch (dash) {
     case 'dash': return '1.9 1.15';
@@ -52,6 +63,29 @@ export function Artboard({ recipe, data, projected, layout, hillshadeHref, inter
   const dNeighbors = useMemo(() => (data.fc.neighbors ? path(data.fc.neighbors as any) ?? '' : ''), [data, path]);
   const dNeBorders = useMemo(() => (data.fc.neBorders ? path(data.fc.neBorders as any) ?? '' : ''), [data, path]);
   const dGraticule = useMemo(() => (data.fc.graticule ? path(data.fc.graticule as any) ?? '' : ''), [data, path]);
+  const dBathyClasses = useMemo(() => {
+    if (!data.fc.bathymetry) return [] as Array<{ depth: number; d: string }>;
+    return data.fc.bathymetry.features
+      .map((f) => ({ depth: f.properties.depth as number, d: path(f as any) ?? '' }))
+      .filter((c) => c.d)
+      .sort((a, b) => a.depth - b.depth);
+  }, [data, path]);
+
+  const contourInterval = layerMap.contours?.filters.intervalM ?? 400;
+  const contourBold = layerMap.contours?.filters.boldEveryM ?? 0;
+  const dContours = useMemo(() => {
+    if (!data.fc.contours) return { normal: '', bold: '' };
+    const iv = Math.max(200, contourInterval);
+    const feats = data.fc.contours.features.filter((f) => f.properties.elev % iv === 0);
+    const normal = path({ type: 'FeatureCollection', features: feats } as any) ?? '';
+    let bold = '';
+    if (contourBold > 0) {
+      const bf = feats.filter((f) => f.properties.elev % contourBold === 0);
+      bold = bf.length ? path({ type: 'FeatureCollection', features: bf } as any) ?? '' : '';
+    }
+    return { normal, bold };
+  }, [data, path, contourInterval, contourBold]);
+
   const dWaterlineRings = useMemo(() => {
     if (!data.fc.waterlines) return [] as string[];
     return [1, 2, 3, 4].map((ring) => {
@@ -135,6 +169,29 @@ export function Artboard({ recipe, data, projected, layout, hillshadeHref, inter
     switch (l.id) {
       case 'sea':
         return <rect {...common} data-testid="sea" x={clipX} y={clipX} width={clipW} height={clipH} fill={l.fill} {...click('sea')} />;
+      case 'bathymetry': {
+        const seaFill = layerMap.sea?.fill ?? '#DDE8EE';
+        const deep = l.fill ?? seaFill;
+        const n = dBathyClasses.length;
+        return (
+          <g {...common} key={l.id} {...click('bathymetry')}>
+            {dBathyClasses.map((c, idx) => (
+              <path key={c.depth} d={c.d} fill={lerpHex(seaFill, deep, (idx + 1) / Math.max(n, 1))} stroke="none" />
+            ))}
+          </g>
+        );
+      }
+      case 'contours':
+        return (
+          <g {...common} key={l.id} {...click('contours')}>
+            {dContours.normal ? (
+              <path d={dContours.normal} fill="none" stroke={l.stroke} strokeWidth={l.strokeWidthMm ?? 0.09} strokeLinejoin="round" />
+            ) : null}
+            {dContours.bold ? (
+              <path d={dContours.bold} fill="none" stroke={l.stroke} strokeWidth={(l.strokeWidthMm ?? 0.09) * 2} strokeLinejoin="round" />
+            ) : null}
+          </g>
+        );
       case 'waterlines': {
         const rings = Math.max(1, Math.min(4, l.filters.rings ?? 4));
         const ringOpacity = [0.6, 0.42, 0.28, 0.16];
@@ -165,20 +222,21 @@ export function Artboard({ recipe, data, projected, layout, hillshadeHref, inter
           const [x1, y1] = toMm(b.xmax, b.ymin);
           const blend = l.filters.blend ?? 'multiply';
           return (
-            <image
-              {...common}
-              href={hillshadeHref}
-              x={x0}
-              y={y0}
-              width={x1 - x0}
-              height={y1 - y0}
-              preserveAspectRatio="none"
-              style={{
-                mixBlendMode: blend,
-                // screen mode inverts the shade so shadows become glow on dark themes
-                filter: blend === 'screen' ? 'invert(1)' : undefined,
-              }}
-            />
+            <g {...common} key={l.id} clipPath={dSweden || dNeighbors ? 'url(#land-clip)' : undefined}>
+              <image
+                href={hillshadeHref}
+                x={x0}
+                y={y0}
+                width={x1 - x0}
+                height={y1 - y0}
+                preserveAspectRatio="none"
+                style={{
+                  mixBlendMode: blend,
+                  // screen mode inverts the shade so shadows become glow on dark themes
+                  filter: blend === 'screen' ? 'invert(1)' : undefined,
+                }}
+              />
+            </g>
           );
         }
       case 'neighbors':
@@ -398,6 +456,13 @@ export function Artboard({ recipe, data, projected, layout, hillshadeHref, inter
           // admin meshes include maritime boundary segments — clip them to the landmass
           <clipPath id="sweden-clip">
             <path d={dSweden} />
+          </clipPath>
+        ) : null}
+        {dSweden || dNeighbors ? (
+          // hillshade is clipped to land: DEM noise over open water would texture the sea
+          <clipPath id="land-clip">
+            {dSweden ? <path d={dSweden} /> : null}
+            {dNeighbors ? <path d={dNeighbors} /> : null}
           </clipPath>
         ) : null}
       </defs>
