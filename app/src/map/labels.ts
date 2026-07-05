@@ -10,11 +10,13 @@ export interface PlacedLabel {
   y: number;
   anchor: 'start' | 'middle' | 'end';
   sizeMm: number;
-  kind: 'city' | 'sea' | 'lake' | 'neighbor';
+  kind: 'city' | 'sea' | 'lake' | 'neighbor' | 'river';
   weight: number;
   italic?: boolean;
   trackingMm?: number;
   overridden?: boolean;
+  /** when set, the label renders on this path (curved); x−baseX / y−baseY shift it */
+  pathD?: string;
   /** anchor point (the city dot) for leader/drag math */
   baseX: number;
   baseY: number;
@@ -74,6 +76,44 @@ function textBox(x: number, y: number, w: number, sizeMm: number, anchor: Placed
   return { x0, y0: y - sizeMm * 0.72, x1: x0 + w, y1: y + sizeMm * 0.22 };
 }
 
+/** Gentle crest arc through (cx,cy), chord rotated by angleDeg, for water-name labels. */
+function arcPath(cx: number, cy: number, widthMm: number, angleDeg: number): string {
+  const half = (widthMm * 1.25) / 2;
+  const sag = widthMm * 0.07;
+  const rad = (angleDeg * Math.PI) / 180;
+  const ux = Math.cos(rad);
+  const uy = Math.sin(rad);
+  // screen y grows downward → “up” relative to the rotated baseline is -perp
+  const px = -uy;
+  const py = ux;
+  const x0 = cx - ux * half;
+  const y0 = cy - uy * half;
+  const x1 = cx + ux * half;
+  const y1 = cy + uy * half;
+  const qx = cx - px * 2 * sag;
+  const qy = cy - py * 2 * sag;
+  const r = (v: number) => Math.round(v * 100) / 100;
+  return `M ${r(x0)} ${r(y0)} Q ${r(qx)} ${r(qy)} ${r(x1)} ${r(y1)}`;
+}
+
+/** Longest LineString of a (Multi)LineString geometry, as coordinate array. */
+function longestLine(geometry: any): number[][] {
+  if (geometry.type === 'LineString') return geometry.coordinates;
+  let best: number[][] = [];
+  let bestLen = -1;
+  for (const part of geometry.coordinates as number[][][]) {
+    let len = 0;
+    for (let i = 1; i < part.length; i++) {
+      len += Math.hypot(part[i][0] - part[i - 1][0], part[i][1] - part[i - 1][1]);
+    }
+    if (len > bestLen) {
+      bestLen = len;
+      best = part;
+    }
+  }
+  return best;
+}
+
 export interface LabelLayout {
   labels: PlacedLabel[];
   /** ids that could not be placed automatically */
@@ -118,11 +158,26 @@ export function layoutLabels(
     out.push({ id, text, x: fx, y: fy, anchor: 'middle', sizeMm, kind, weight: 500, italic, trackingMm, overridden: !!ov, baseX: x, baseY: y });
   };
 
-  // --- fixed water/sea labels first (they own their spot) ---
+  // --- fixed water/sea labels first (they own their spot); seas curve along their axis ---
   if (f.seaLabels && data.fc.seaLabels) {
     for (const s of data.fc.seaLabels.features) {
-      const [x, y] = projected.toMm(s.geometry.coordinates[0], s.geometry.coordinates[1]);
-      pushFixed(`sea:${s.properties.name}`, s.properties.name, x, y, 2.7 * fontScale, 'sea', true, 0.5);
+      const name = s.properties.name as string;
+      const id = `sea:${name}`;
+      const ov: LabelOverride | undefined = overrides[id];
+      if (ov?.hidden) continue;
+      const [bx, by] = projected.toMm(s.geometry.coordinates[0], s.geometry.coordinates[1]);
+      const x = bx + (ov?.dxMm ?? 0);
+      const y = by + (ov?.dyMm ?? 0);
+      if (!inFrame(x, y)) continue;
+      const size = 2.7 * fontScale;
+      const w = textWidthMm(name, size, true, 500, 0.5);
+      boxes.push(textBox(x, y, w, size, 'middle'));
+      out.push({
+        id, text: name, x, y, anchor: 'middle', sizeMm: size, kind: 'sea', weight: 500,
+        italic: true, trackingMm: 0.5, overridden: !!ov,
+        pathD: arcPath(bx, by, w, s.properties.angle ?? 0),
+        baseX: bx, baseY: by,
+      });
     }
   }
   if (f.lakeLabels && data.fc.lakes) {
@@ -140,6 +195,72 @@ export function layoutLabels(
     for (const p of data.fc.neighborPlaces.features) {
       const [x, y] = projected.toMm(p.geometry.coordinates[0], p.geometry.coordinates[1]);
       pushFixed(`nb:${p.properties.name}`, p.properties.name, x, y - 1.6, 2.0 * fontScale, 'neighbor');
+    }
+  }
+
+  // --- river names flow along their own geometry (placed before cities so cities dodge them) ---
+  // Selection uses the longest CONNECTED stem, not the dissolved per-name total: common
+  // names (Svartån, Lillån…) merge many distinct small rivers into fake giants otherwise.
+  const riversLayer = layerOf(recipe, 'rivers');
+  if ((f.riverLabels ?? true) && riversLayer?.visible && data.fc.rivers) {
+    const stemKm = (coords: number[][]) => {
+      let m = 0;
+      for (let i = 1; i < coords.length; i++) {
+        m += Math.hypot(coords[i][0] - coords[i - 1][0], coords[i][1] - coords[i - 1][1]);
+      }
+      return m / 1000; // geometry is in projected meters
+    };
+    const named = data.fc.rivers.features
+      .filter((r) => r.properties.name)
+      .map((r) => {
+        const stem = longestLine(r.geometry);
+        return { r, stem, km: stemKm(stem) };
+      })
+      .filter((x) => x.km >= 110)
+      .sort((a, b) => b.km - a.km)
+      .slice(0, 10);
+
+    for (const { r: riv, stem } of named) {
+      const name = riv.properties.name as string;
+      const id = `river:${name}`;
+      const ov: LabelOverride | undefined = overrides[id];
+      if (ov?.hidden) continue;
+      const size = 1.85 * fontScale;
+      const w = textWidthMm(name, size, true, 500, 0.15);
+
+      let pts = stem.map(([e, n]) => projected.toMm(e, n));
+      if (pts.length < 2) continue;
+      const cum = [0];
+      for (let i = 1; i < pts.length; i++) {
+        cum.push(cum[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+      }
+      const total = cum[cum.length - 1];
+      if (total < w * 1.5) continue; // too short on paper for its name
+      const pointAt = (t: number): [number, number] => {
+        let i = 1;
+        while (i < cum.length - 1 && cum[i] < t) i++;
+        const f0 = (t - cum[i - 1]) / Math.max(cum[i] - cum[i - 1], 1e-9);
+        return [
+          pts[i - 1][0] + (pts[i][0] - pts[i - 1][0]) * f0,
+          pts[i - 1][1] + (pts[i][1] - pts[i - 1][1]) * f0,
+        ];
+      };
+      const [mx, my] = pointAt(total * 0.5);
+      // culling and collision use the final (override-shifted) position
+      const x = mx + (ov?.dxMm ?? 0);
+      const y = my + (ov?.dyMm ?? 0);
+      if (!inFrame(x, y)) continue;
+      // keep the name upright: reverse the path when it reads right-to-left at the middle
+      if (pointAt(total * 0.58)[0] < pointAt(total * 0.42)[0]) pts = [...pts].reverse();
+      const r2 = (v: number) => Math.round(v * 100) / 100;
+      const d = 'M' + pts.map((p) => `${r2(p[0])} ${r2(p[1])}`).join('L');
+
+      boxes.push({ x0: x - w / 2, y0: y - size, x1: x + w / 2, y1: y + size * 0.4 });
+      out.push({
+        id, text: name, x, y, anchor: 'middle',
+        sizeMm: size, kind: 'river', weight: 500, italic: true, trackingMm: 0.15,
+        overridden: !!ov, pathD: d, baseX: mx, baseY: my,
+      });
     }
   }
 

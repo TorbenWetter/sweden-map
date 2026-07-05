@@ -18,12 +18,12 @@
     "Örebro", "Västerås", "Falun", "Gävle", "Härnösand", "Östersund", "Umeå", "Luleå"
   ],
   "seaLabels": [
-    { "name": "Östersjön", "lon": 19.1, "lat": 56.6 },
-    { "name": "Bottenhavet", "lon": 19.8, "lat": 61.9 },
-    { "name": "Bottenviken", "lon": 22.6, "lat": 64.9 },
-    { "name": "Kattegatt", "lon": 11.35, "lat": 56.9 },
-    { "name": "Skagerrak", "lon": 9.8, "lat": 58.15 },
-    { "name": "Ålands hav", "lon": 19.4, "lat": 60.1 }
+    { "name": "Östersjön", "lon": 19.1, "lat": 56.6, "angleDeg": -28 },
+    { "name": "Bottenhavet", "lon": 19.8, "lat": 61.9, "angleDeg": -40 },
+    { "name": "Bottenviken", "lon": 22.6, "lat": 64.9, "angleDeg": -35 },
+    { "name": "Kattegatt", "lon": 11.35, "lat": 56.9, "angleDeg": -58 },
+    { "name": "Skagerrak", "lon": 9.8, "lat": 58.15, "angleDeg": -8 },
+    { "name": "Ålands hav", "lon": 19.4, "lat": 60.1, "angleDeg": -15 }
   ],
   "neighborPlaces": [
     { "name": "Oslo", "lon": 10.7522, "lat": 59.9139 },

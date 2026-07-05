@@ -257,10 +257,48 @@ export function Artboard({ recipe, data, projected, layout, hillshadeHref, inter
         const halo = recipe.furniture.halo;
         return (
           <g {...common} key={l.id}>
-            {layout.labels.map((lab) => {
-              const waterish = lab.kind === 'sea' || lab.kind === 'lake';
-              const fill = waterish ? l.stroke : lab.kind === 'neighbor' ? l.fill : l.fill;
+            {layout.labels.map((lab, i) => {
+              const waterish = lab.kind === 'sea' || lab.kind === 'lake' || lab.kind === 'river';
+              const fill = waterish ? l.stroke : l.fill;
               const dist = Math.hypot(lab.x - lab.baseX, lab.y - lab.baseY);
+              const labelEditStyle = interactive?.labelEdit
+                ? ({ cursor: 'grab', userSelect: 'none' } as React.CSSProperties)
+                : ({ userSelect: 'none' } as React.CSSProperties);
+              const onDown = interactive?.labelEdit
+                ? (e: React.PointerEvent) => interactive.onLabelPointerDown(e, lab)
+                : undefined;
+
+              if (lab.pathD) {
+                // curved label: text flows on its own path; overrides shift the whole group
+                const pid = `lblp-${i}`;
+                const dx = lab.x - lab.baseX;
+                const dy = lab.y - lab.baseY;
+                return (
+                  <g key={lab.id} transform={dx || dy ? `translate(${dx} ${dy})` : undefined}>
+                    <defs>
+                      <path id={pid} d={lab.pathD} fill="none" />
+                    </defs>
+                    <text
+                      fontSize={lab.sizeMm}
+                      fontWeight={lab.weight}
+                      fontStyle={lab.italic ? 'italic' : undefined}
+                      letterSpacing={lab.trackingMm ? `${lab.trackingMm}` : undefined}
+                      fill={fill}
+                      stroke={lab.kind === 'river' ? halo : undefined}
+                      strokeWidth={lab.kind === 'river' ? 0.28 : undefined}
+                      strokeLinejoin="round"
+                      paintOrder="stroke"
+                      style={labelEditStyle}
+                      onPointerDown={onDown}
+                    >
+                      <textPath href={`#${pid}`} xlinkHref={`#${pid}`} startOffset="50%" textAnchor="middle">
+                        {lab.text}
+                      </textPath>
+                    </text>
+                  </g>
+                );
+              }
+
               return (
                 <g key={lab.id}>
                   {lab.kind === 'city' && lab.overridden && dist > 6 ? (
@@ -280,8 +318,8 @@ export function Artboard({ recipe, data, projected, layout, hillshadeHref, inter
                     strokeWidth={waterish ? undefined : 0.32}
                     strokeLinejoin="round"
                     paintOrder="stroke"
-                    style={interactive?.labelEdit ? { cursor: 'grab', userSelect: 'none' } : { userSelect: 'none' }}
-                    onPointerDown={interactive?.labelEdit ? (e) => interactive.onLabelPointerDown(e, lab) : undefined}
+                    style={labelEditStyle}
+                    onPointerDown={onDown}
                   >
                     {lab.text}
                   </text>

@@ -22,9 +22,9 @@ const parallels = range(g.latMin, g.latMax - 1, g.stepDeg).map((lat) =>
   line(range(g.lonMin - 2, g.lonMax + 1, g.densifyDeg).map((lon) => [lon, lat]), { axis: 'parallel', deg: lat }));
 writeFileSync(join(WORK, 'graticule4326.geojson'), JSON.stringify(fc([...meridians, ...parallels])));
 
-// --- curated sea labels ---
+// --- curated sea labels (angle = water-body axis for curved rendering) ---
 writeFileSync(join(WORK, 'sealabels4326.geojson'),
-  JSON.stringify(fc(config.seaLabels.map((s) => point([s.lon, s.lat], { name: s.name, kind: 'sea' })))));
+  JSON.stringify(fc(config.seaLabels.map((s) => point([s.lon, s.lat], { name: s.name, kind: 'sea', angle: s.angleDeg ?? 0 })))));
 
 // --- curated neighbor cities (ground the map; filtered by frame at runtime) ---
 writeFileSync(join(WORK, 'neighborplaces4326.geojson'),

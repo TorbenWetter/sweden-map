@@ -17,6 +17,7 @@ const DEFAULT_FILTERS: Partial<Record<LayerId, LayerState['filters']>> = {
     fontScale: 1,
     seaLabels: true,
     lakeLabels: true,
+    riverLabels: true,
     neighborLabels: true,
   },
 };
