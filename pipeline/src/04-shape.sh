@@ -126,6 +126,20 @@ done
   -simplify weighted interval=250 \
   -o format=topojson "$OUT/waterlines.json"
 
+# --- ferries: sea lanes, so clip to frame (not the country); drop tiny cable ferries ---
+log "ferries…"
+# unnamed routes keep a unique key — a plain name-dissolve would fuse them into one
+# giant feature that smuggles tiny cable ferries past the length filter
+"$MS" "$WORK/ferries.geojson" \
+  -clip bbox=$FRAME_BBOX \
+  -each 'key=name || "u" + this.id' \
+  -dissolve fields=key copy-fields=name \
+  -each 'length_km=Math.round(this.length/100)/10' \
+  -filter 'length_km>=8' \
+  -simplify weighted interval=300 \
+  -filter-fields name,length_km \
+  -o format=topojson "$OUT/ferries.json"
+
 # --- point/line layers without tiers ---
 log "places, graticule, ne borders, labels…"
 "$MS" "$WORK/places.geojson" -clip "$WORK/sweden0.geojson" \

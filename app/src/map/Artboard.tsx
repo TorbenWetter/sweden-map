@@ -103,6 +103,13 @@ export function Artboard({ recipe, data, projected, layout, hillshadeHref, inter
     return path({ type: 'FeatureCollection', features: feats } as any) ?? '';
   }, [data, path, lakesMin]);
 
+  const ferriesMin = layerMap.ferries?.filters.minLengthKm ?? 0;
+  const dFerries = useMemo(() => {
+    if (!data.fc.ferries) return '';
+    const feats = data.fc.ferries.features.filter((f) => (f.properties.length_km ?? 0) >= ferriesMin);
+    return path({ type: 'FeatureCollection', features: feats } as any) ?? '';
+  }, [data, path, ferriesMin]);
+
   const riversMin = layerMap.rivers?.filters.minLengthKm ?? 0;
   const dRivers = useMemo(() => {
     if (!data.fc.rivers) return '';
@@ -317,6 +324,20 @@ export function Artboard({ recipe, data, projected, layout, hillshadeHref, inter
             )}
           </g>
         );
+      case 'ferries':
+        return (
+          <path
+            {...common}
+            d={dFerries}
+            fill="none"
+            stroke={l.stroke}
+            strokeWidth={l.strokeWidthMm}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeDasharray={dashArray(l.dash ?? 'dash', l.strokeWidthMm ?? 0.18)}
+            {...click('ferries')}
+          />
+        );
       case 'graticule':
         return <path {...common} d={dGraticule} fill="none" stroke={l.stroke} strokeWidth={l.strokeWidthMm} strokeDasharray={dashArray(l.dash, l.strokeWidthMm ?? 0.12)} />;
       case 'places':
@@ -429,6 +450,7 @@ export function Artboard({ recipe, data, projected, layout, hillshadeHref, inter
     const t = (key: string, fallback: string) => data.manifest.legendLabels?.[key] ?? fallback;
     if (L.roads?.visible) items.push({ kind: 'line', color: L.roads.stroke ?? '#000', w: L.roads.strokeWidthMm, label: t('roads', 'Major road') });
     if (L.railways?.visible) items.push({ kind: 'dash', color: L.railways.stroke ?? '#000', w: L.railways.strokeWidthMm, label: t('railways', 'Railway'), dash: L.railways.dash });
+    if (L.ferries?.visible) items.push({ kind: 'dash', color: L.ferries.stroke ?? '#789', w: L.ferries.strokeWidthMm, label: t('ferries', 'Ferry'), dash: L.ferries.dash ?? 'dash' });
     if (L.lakes?.visible) items.push({ kind: 'rect', color: L.lakes.fill ?? '#9cf', label: t('lakes', 'Lake') });
     if (L.parks?.visible) items.push({ kind: 'rect', color: L.parks.fill ?? '#cfc', label: t('parks', 'National park') });
     if (L.lan?.visible) items.push({ kind: 'line', color: L.lan.stroke ?? '#888', w: L.lan.strokeWidthMm, label: t('lan', 'Region border'), dash: L.lan.dash });

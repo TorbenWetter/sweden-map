@@ -64,6 +64,10 @@ const places = fc([
   feat(point(430000, 6210000), { name: 'Malmö', place: 'city', population: 325069 }),
   feat(point(690000, 7480000), { name: 'Kiruna', place: 'town', population: 17002 }),
 ]);
+const ferries = fc([
+  feat(line([[905000, 6560000], [980000, 6620000], [1040000, 6700000]]), { name: 'Testlinjen', length_km: 160 }),
+  feat(line([[890000, 6420000], [905000, 6435000]]), { name: 'Lillfärjan', length_km: 4 }),
+]);
 const bathymetry = fc([20, 50, 100, 200, 500].map((depth, i) =>
   feat(rect(940000 + i * 2000, 6300000, 1060000 - i * 2000, 7400000 - i * 30000), { depth }),
 ));
@@ -104,6 +108,7 @@ for (const [id, collection] of Object.entries(tiered)) {
 write('places.json', places);
 write('waterlines.json', waterlines);
 write('bathymetry.json', bathymetry);
+write('ferries.json', ferries);
 write('graticule.json', graticule);
 write('ne-borders.json', neBorders);
 write('sea-labels.json', seaLabels);
@@ -114,6 +119,7 @@ const SINGLE_FILES = {
   places: 'places.json',
   waterlines: 'waterlines.json',
   bathymetry: 'bathymetry.json',
+  ferries: 'ferries.json',
   graticule: 'graticule.json',
   neBorders: 'ne-borders.json',
   seaLabels: 'sea-labels.json',
@@ -130,7 +136,7 @@ const manifest = {
   swedenBounds: [300000, 6200000, 980000, 7500000],
   placePriority: ['Stockholm', 'Göteborg', 'Malmö'],
   layerLabels: { sweden: 'Sweden', lan: 'Län borders', kommun: 'Kommun borders' },
-  legendLabels: { roads: 'Större väg', railways: 'Järnväg', lakes: 'Sjö', parks: 'Nationalpark', lan: 'Länsgräns', kommun: 'Kommungräns', places: 'Tätort' },
+  legendLabels: { roads: 'Större väg', railways: 'Järnväg', ferries: 'Färjelinje', lakes: 'Sjö', parks: 'Nationalpark', lan: 'Länsgräns', kommun: 'Kommungräns', places: 'Tätort' },
   layers: {
     ...Object.fromEntries(
       Object.keys(tiered).map((id) => [

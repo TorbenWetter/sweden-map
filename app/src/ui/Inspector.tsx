@@ -55,8 +55,8 @@ function LayerTab() {
     });
 
   const hasFill = ['sea', 'bathymetry', 'neighbors', 'sweden', 'parks', 'lakes', 'places', 'labels'].includes(layer.id);
-  const hasStroke = ['waterlines', 'contours', 'sweden', 'lakes', 'parks', 'neBorders', 'rivers', 'kommun', 'lan', 'roads', 'railways', 'graticule'].includes(layer.id);
-  const hasDash = ['neBorders', 'kommun', 'lan', 'railways', 'graticule'].includes(layer.id);
+  const hasStroke = ['waterlines', 'contours', 'sweden', 'lakes', 'parks', 'neBorders', 'rivers', 'kommun', 'lan', 'roads', 'railways', 'ferries', 'graticule'].includes(layer.id);
+  const hasDash = ['neBorders', 'kommun', 'lan', 'railways', 'ferries', 'graticule'].includes(layer.id);
 
   return (
     <>
@@ -165,6 +165,13 @@ function LayerFilters({ layer, patch }: { layer: LayerState; patch: (fn: (l: Lay
       return (
         <Section title="Filter">
           <RangeField label="Min length" value={layer.filters.minLengthKm ?? 30} min={30} max={400} display={(v) => `${Math.round(v)} km`} onChange={(v) => patch((l) => (l.filters.minLengthKm = v))} />
+        </Section>
+      );
+    case 'ferries':
+      return (
+        <Section title="Filter">
+          <RangeField label="Min length" value={layer.filters.minLengthKm ?? 10} min={8} max={120} display={(v) => `${Math.round(v)} km`} onChange={(v) => patch((l) => (l.filters.minLengthKm = v))} />
+          <div className="hint">Raise to keep only Gotland and international lanes; lower to include road ferries.</div>
         </Section>
       );
     case 'parks':

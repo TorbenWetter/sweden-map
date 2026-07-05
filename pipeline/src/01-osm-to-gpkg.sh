@@ -13,9 +13,9 @@ log "pbf → gpkg: places (points)…"
 ogr2ogr -f GPKG "$GPKG" "$PBF" points \
   -where "place IN ('city','town')" -nln places_raw
 
-log "pbf → gpkg: transport + rivers (lines)…"
+log "pbf → gpkg: transport + rivers + ferries (lines)…"
 ogr2ogr -f GPKG -update "$GPKG" "$PBF" lines \
-  -where "highway IN ('motorway','trunk','primary','secondary') OR railway = 'rail' OR waterway = 'river'" \
+  -where "highway IN ('motorway','trunk','primary','secondary') OR railway = 'rail' OR waterway = 'river' OR other_tags LIKE '%\"route\"=>\"ferry\"%'" \
   -nln lines_raw
 
 log "pbf → gpkg: admin/water/parks (multipolygons)…"

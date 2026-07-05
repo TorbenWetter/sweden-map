@@ -42,6 +42,7 @@
   "legendLabels": {
     "roads": "Större väg",
     "railways": "Järnväg",
+    "ferries": "Färjelinje",
     "lakes": "Sjö",
     "parks": "Nationalpark",
     "lan": "Länsgräns",

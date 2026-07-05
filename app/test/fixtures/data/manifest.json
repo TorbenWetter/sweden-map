@@ -33,6 +33,7 @@
   "legendLabels": {
     "roads": "Större väg",
     "railways": "Järnväg",
+    "ferries": "Färjelinje",
     "lakes": "Sjö",
     "parks": "Nationalpark",
     "lan": "Länsgräns",
@@ -232,6 +233,21 @@
       },
       "print": {
         "file": "bathymetry.json",
+        "bytes": 1,
+        "features": 1,
+        "bbox": null
+      }
+    },
+    "ferries": {
+      "tiered": false,
+      "preview": {
+        "file": "ferries.json",
+        "bytes": 1,
+        "features": 1,
+        "bbox": null
+      },
+      "print": {
+        "file": "ferries.json",
         "bytes": 1,
         "features": 1,
         "bbox": null

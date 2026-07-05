@@ -16,6 +16,7 @@ export type LayerId =
   | 'lan'
   | 'roads'
   | 'railways'
+  | 'ferries'
   | 'graticule'
   | 'places'
   | 'labels';
@@ -176,6 +177,7 @@ export const LAYER_LABELS: Record<LayerId, string> = {
   lan: 'Län borders',
   roads: 'Roads',
   railways: 'Railways',
+  ferries: 'Ferry routes',
   graticule: 'Graticule',
   places: 'Cities & towns',
   labels: 'Labels',

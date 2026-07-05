@@ -56,6 +56,9 @@ X railways "$GPKG" -dialect sqlite -sql \
      FROM lines_raw WHERE railway='rail')
    WHERE usage IN ('main','branch') OR (usage IS NULL AND service IS NULL)"
 
+X ferries "$GPKG" -dialect sqlite -sql \
+  "SELECT name, geom FROM lines_raw WHERE hstore_get_value(other_tags,'route')='ferry'"
+
 X places "$GPKG" -dialect sqlite -sql \
   "SELECT name, place,
           CAST(hstore_get_value(other_tags,'population') AS INTEGER) AS population,
