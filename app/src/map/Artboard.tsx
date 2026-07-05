@@ -178,21 +178,37 @@ export function Artboard({ recipe, data, projected, layout, hillshadeHref, inter
         );
       case 'roads': {
         const order = [...ROAD_CLASSES].reverse(); // minor first, motorway on top
+        const enabled = order.filter((cls) => l.filters.classes?.[cls] && dRoadsByClass[cls]);
+        const widthOf = (cls: string) =>
+          l.classStyles?.[cls]?.strokeWidthMm ?? (l.strokeWidthMm ?? 0.5) * ROAD_WIDTH_FACTOR[cls];
+        const colorOf = (cls: string) => l.classStyles?.[cls]?.stroke ?? l.stroke;
+        const casing = l.casing;
         return (
           <g {...common} key={l.id} {...click('roads')}>
-            {order.map((cls) =>
-              l.filters.classes?.[cls] && dRoadsByClass[cls] ? (
-                <path
-                  key={cls}
-                  d={dRoadsByClass[cls]}
-                  fill="none"
-                  stroke={l.stroke}
-                  strokeWidth={(l.strokeWidthMm ?? 0.5) * ROAD_WIDTH_FACTOR[cls]}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              ) : null,
-            )}
+            {casing?.on
+              ? enabled.map((cls) => (
+                  <path
+                    key={`casing-${cls}`}
+                    d={dRoadsByClass[cls]}
+                    fill="none"
+                    stroke={casing.color}
+                    strokeWidth={widthOf(cls) + casing.extraMm * 2}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                ))
+              : null}
+            {enabled.map((cls) => (
+              <path
+                key={cls}
+                d={dRoadsByClass[cls]}
+                fill="none"
+                stroke={colorOf(cls)}
+                strokeWidth={widthOf(cls)}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            ))}
           </g>
         );
       }

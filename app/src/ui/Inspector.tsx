@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { RAIL_USAGES, ROAD_CLASSES, type Dash, type LayerId, type LayerState, type Recipe } from '../types';
+import { RAIL_USAGES, ROAD_CLASSES, ROAD_WIDTH_FACTOR, type Dash, type LayerId, type LayerState, type Recipe } from '../types';
 import { layerOf, useStudio } from '../state/store';
 import { CheckRow, ColorField, Field, NumberField, RangeField, Section, SelectField } from './controls';
 
@@ -11,8 +11,8 @@ const DASH_OPTIONS: Array<{ value: Dash; label: string }> = [
 ];
 
 const CLASS_LABELS: Record<string, string> = {
-  motorway: 'Motorway (motorväg)',
-  trunk: 'Trunk (riksväg)',
+  motorway: 'Motorway',
+  trunk: 'Trunk',
   primary: 'Primary',
   secondary: 'Secondary',
 };
@@ -106,18 +106,7 @@ function LayerTab() {
 function LayerFilters({ layer, patch }: { layer: LayerState; patch: (fn: (l: LayerState) => void) => void }) {
   switch (layer.id) {
     case 'roads':
-      return (
-        <Section title="Road classes">
-          {ROAD_CLASSES.map((cls) => (
-            <CheckRow
-              key={cls}
-              label={CLASS_LABELS[cls]}
-              checked={layer.filters.classes?.[cls] ?? false}
-              onChange={(v) => patch((l) => { (l.filters.classes ??= {})[cls] = v; })}
-            />
-          ))}
-        </Section>
-      );
+      return <RoadsFilters layer={layer} patch={patch} />;
     case 'railways':
       return (
         <Section title="Rail usage">
@@ -170,6 +159,76 @@ function LayerFilters({ layer, patch }: { layer: LayerState; patch: (fn: (l: Lay
     default:
       return null;
   }
+}
+
+function RoadsFilters({ layer, patch }: { layer: LayerState; patch: (fn: (l: LayerState) => void) => void }) {
+  const begin = useStudio((s) => s.beginTransient);
+  const end = useStudio((s) => s.endTransient);
+  const base = layer.strokeWidthMm ?? 0.5;
+  const hasOverrides = Object.keys(layer.classStyles ?? {}).length > 0;
+
+  return (
+    <>
+      <Section title="Road classes">
+        {ROAD_CLASSES.map((cls) => {
+          const effColor = layer.classStyles?.[cls]?.stroke ?? layer.stroke ?? '#000000';
+          const effWidth = layer.classStyles?.[cls]?.strokeWidthMm ?? base * ROAD_WIDTH_FACTOR[cls];
+          return (
+            <div className="class-row" key={cls}>
+              <input
+                type="checkbox"
+                checked={layer.filters.classes?.[cls] ?? false}
+                onChange={(e) => patch((l) => { (l.filters.classes ??= {})[cls] = e.target.checked; })}
+              />
+              <span className="class-label">{CLASS_LABELS[cls]}</span>
+              <input
+                type="color"
+                value={/^#[0-9a-f]{6}$/i.test(effColor) ? effColor : '#000000'}
+                title={`${CLASS_LABELS[cls]} color`}
+                onFocus={begin}
+                onBlur={end}
+                onChange={(e) => patch((l) => { ((l.classStyles ??= {})[cls] ??= {}).stroke = e.target.value; })}
+              />
+              <span className="number-field">
+                <input
+                  className="mono-input class-width"
+                  type="number"
+                  value={Math.round(effWidth * 100) / 100}
+                  step={0.05}
+                  min={0}
+                  max={4}
+                  title={`${CLASS_LABELS[cls]} width (mm)`}
+                  onFocus={begin}
+                  onBlur={end}
+                  onChange={(e) => patch((l) => { ((l.classStyles ??= {})[cls] ??= {}).strokeWidthMm = Number(e.target.value); })}
+                />
+              </span>
+            </div>
+          );
+        })}
+        {hasOverrides ? (
+          <button className="link-btn" onClick={() => patch((l) => { delete l.classStyles; })}>
+            Reset to base color × class widths
+          </button>
+        ) : (
+          <div className="hint">Classes inherit the road color and width-per-class factors until you override them here.</div>
+        )}
+      </Section>
+      <Section title="Casing">
+        <CheckRow
+          label="Under-stroke casing"
+          checked={layer.casing?.on ?? false}
+          onChange={(v) => patch((l) => { l.casing = { on: v, color: l.casing?.color ?? '#FFFFFF', extraMm: l.casing?.extraMm ?? 0.14 }; })}
+        />
+        {layer.casing?.on ? (
+          <>
+            <ColorField label="Color" value={layer.casing.color} onChange={(v) => patch((l) => { l.casing!.color = v; })} />
+            <NumberField label="Extra width" value={layer.casing.extraMm} step={0.02} min={0} max={1} unit="mm" onChange={(v) => patch((l) => { l.casing!.extraMm = v; })} />
+          </>
+        ) : null}
+      </Section>
+    </>
+  );
 }
 
 const PAPER_PRESETS = [

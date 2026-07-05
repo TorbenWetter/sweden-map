@@ -43,6 +43,18 @@ export interface LayerFilters {
   blend?: 'multiply' | 'screen';
 }
 
+export interface ClassStyle {
+  stroke?: string;
+  strokeWidthMm?: number;
+}
+
+export interface Casing {
+  on: boolean;
+  color: string;
+  /** extra stroke width beyond the road fill, per side, in mm */
+  extraMm: number;
+}
+
 export interface LayerState {
   id: LayerId;
   visible: boolean;
@@ -51,6 +63,10 @@ export interface LayerState {
   stroke?: string;
   strokeWidthMm?: number;
   dash?: Dash;
+  /** per-class overrides (roads); absent classes inherit stroke × width factor */
+  classStyles?: Record<string, ClassStyle>;
+  /** contrasting under-stroke beneath all classes (roads) */
+  casing?: Casing;
   filters: LayerFilters;
 }
 
