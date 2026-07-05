@@ -1,0 +1,1 @@
+{"type":"Topology","objects":{"neighbors_preview_json":{"type":"GeometryCollection","geometries":[{"type":"Polygon","arcs":[[0]]}]}},"arcs":[[[0,0],[9999,0],[0,9999],[-9999,0],[0,-9999]]],"bbox":[200000,6600000,290000,7600000],"transform":{"scale":[9.000900090009,100.01000100010002],"translate":[200000,6600000]}}

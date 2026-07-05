@@ -6,7 +6,8 @@
     "pipeline": "pnpm --filter pipeline all",
     "dev": "pnpm --filter app dev",
     "build": "pnpm --filter app build",
-    "preview": "pnpm --filter app preview"
+    "preview": "pnpm --filter app preview",
+    "test": "pnpm --filter app test"
   },
   "packageManager": "pnpm@10.4.1"
 }

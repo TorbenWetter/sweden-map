@@ -126,7 +126,7 @@ export function Artboard({ recipe, data, projected, layout, hillshadeHref, inter
     const common = { key: l.id, opacity: l.opacity === 1 ? undefined : l.opacity };
     switch (l.id) {
       case 'sea':
-        return <rect {...common} x={clipX} y={clipX} width={clipW} height={clipH} fill={l.fill} {...click('sea')} />;
+        return <rect {...common} data-testid="sea" x={clipX} y={clipX} width={clipW} height={clipH} fill={l.fill} {...click('sea')} />;
       case 'hillshade':
         if (!hillshadeHref || !data.manifest.hillshade) return null;
         {
@@ -304,7 +304,7 @@ export function Artboard({ recipe, data, projected, layout, hillshadeHref, inter
   }, [projected.scaleDen]);
 
   return (
-    <g fontFamily="Inter, 'Helvetica Neue', sans-serif">
+    <g fontFamily="Inter, 'Helvetica Neue', sans-serif" data-testid="artboard">
       <defs>
         <clipPath id="paper-clip">
           <rect x={clipX} y={clipX} width={clipW} height={clipH} />

@@ -1,0 +1,1 @@
+{"type":"Topology","objects":{"ne_borders_json":{"type":"GeometryCollection","geometries":[{"type":"LineString","arcs":[0]}]}},"arcs":[[[0,0],[0,9999]]],"bbox":[245000,6600000,245000,7600000],"transform":{"scale":[1,100.01000100010002],"translate":[245000,6600000]}}

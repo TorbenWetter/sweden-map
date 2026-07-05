@@ -1,0 +1,1 @@
+{"type":"Topology","objects":{"neighbor_places_json":{"type":"GeometryCollection","geometries":[{"type":"Point","coordinates":[0,0],"properties":{"name":"Oslo"}}]}},"arcs":[],"bbox":[230000,6950000,230000,6950000],"transform":{"scale":[1,1],"translate":[230000,6950000]}}
