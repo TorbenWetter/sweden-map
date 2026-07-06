@@ -514,7 +514,7 @@ export function Artboard({ recipe, data, projected, layout, hillshade, interacti
                     fontStyle={lab.italic ? 'italic' : undefined}
                     letterSpacing={lab.trackingMm ? `${lab.trackingMm}` : undefined}
                     fill={fill}
-                    opacity={lab.kind === 'neighbor' ? 0.62 : undefined}
+                    opacity={lab.kind === 'neighbor' ? 0.62 : lab.kind === 'region' ? 0.42 : undefined}
                     stroke={waterish ? undefined : halo}
                     strokeWidth={waterish ? undefined : 0.32}
                     strokeLinejoin="round"

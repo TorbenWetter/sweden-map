@@ -49,6 +49,7 @@ export interface LayerFilters {
   seaLabels?: boolean;
   lakeLabels?: boolean;
   riverLabels?: boolean;
+  regionLabels?: boolean;
   neighborLabels?: boolean;
   /** hillshade: multiply darkens (light themes), screen glows inverted relief (dark themes) */
   blend?: 'multiply' | 'screen';

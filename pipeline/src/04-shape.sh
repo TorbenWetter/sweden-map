@@ -36,7 +36,8 @@ for T in print preview; do
   IV=$(tier $T)
   log "admin boundaries ($T)…"
   "$MS" "$WORK/lan.geojson" -simplify weighted interval=$IV keep-shapes \
-    -filter-fields name,ref -o format=topojson "$OUT/lan.$T.json"
+    -each "label=(name||'').replace(new RegExp('$ADMIN1_STRIP','i'),'')||null" \
+    -filter-fields name,ref,label -o format=topojson "$OUT/lan.$T.json"
   "$MS" "$WORK/kommun.geojson" -simplify weighted interval=$IV keep-shapes \
     -filter-fields name -o format=topojson "$OUT/kommun.$T.json"
 done

@@ -207,6 +207,7 @@ function LayerFilters({ layer, patch }: { layer: LayerState; patch: (fn: (l: Lay
           <RangeField label="Font scale" value={layer.filters.fontScale ?? 1} min={0.7} max={1.6} step={0.01} display={(v) => `${Math.round(v * 100)}%`} onChange={(v) => patch((l) => (l.filters.fontScale = v))} />
           <CheckRow label="Sea names" checked={layer.filters.seaLabels ?? true} onChange={(v) => patch((l) => (l.filters.seaLabels = v))} />
           <CheckRow label="Lake names" checked={layer.filters.lakeLabels ?? true} onChange={(v) => patch((l) => (l.filters.lakeLabels = v))} />
+          <CheckRow label="Region names (län)" checked={layer.filters.regionLabels ?? false} onChange={(v) => patch((l) => (l.filters.regionLabels = v))} />
           <CheckRow label="River names" checked={layer.filters.riverLabels ?? true} onChange={(v) => patch((l) => (l.filters.riverLabels = v))} />
           <CheckRow label="Neighbor capitals" checked={layer.filters.neighborLabels ?? true} onChange={(v) => patch((l) => (l.filters.neighborLabels = v))} />
         </Section>

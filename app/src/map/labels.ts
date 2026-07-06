@@ -10,7 +10,7 @@ export interface PlacedLabel {
   y: number;
   anchor: 'start' | 'middle' | 'end';
   sizeMm: number;
-  kind: 'city' | 'sea' | 'lake' | 'neighbor' | 'river' | 'shield';
+  kind: 'city' | 'sea' | 'lake' | 'neighbor' | 'river' | 'shield' | 'region';
   weight: number;
   italic?: boolean;
   trackingMm?: number;
@@ -114,6 +114,26 @@ function longestLine(geometry: any): number[][] {
   return best;
 }
 
+/** Largest polygon part of a (Multi)Polygon feature, as a standalone Polygon feature. */
+function largestPolygonPart(f: any): any {
+  if (f.geometry.type === 'Polygon') return f;
+  let best: number[][][] | null = null;
+  let bestArea = -1;
+  for (const poly of f.geometry.coordinates as number[][][][]) {
+    const ring = poly[0];
+    let area = 0;
+    for (let i = 1; i < ring.length; i++) {
+      area += ring[i - 1][0] * ring[i][1] - ring[i][0] * ring[i - 1][1];
+    }
+    area = Math.abs(area / 2);
+    if (area > bestArea) {
+      bestArea = area;
+      best = poly;
+    }
+  }
+  return { type: 'Feature', properties: f.properties, geometry: { type: 'Polygon', coordinates: best } };
+}
+
 export interface LabelLayout {
   labels: PlacedLabel[];
   /** ids that could not be placed automatically */
@@ -195,6 +215,40 @@ export function layoutLabels(
     for (const p of data.fc.neighborPlaces.features) {
       const [x, y] = projected.toMm(p.geometry.coordinates[0], p.geometry.coordinates[1]);
       pushFixed(`nb:${p.properties.name}`, p.properties.name, x, y - 1.6, 2.0 * fontScale, 'neighbor');
+    }
+  }
+
+  // --- region (admin1) names: muted letterspaced caps at each county's visual center ---
+  if (f.regionLabels && data.fc.lan) {
+    for (const lan of data.fc.lan.features) {
+      const label = (lan.properties.label || lan.properties.name) as string | null;
+      if (!label) continue;
+      const id = `region:${label}`;
+      const ov: LabelOverride | undefined = overrides[id];
+      if (ov?.hidden) continue;
+      const part = largestPolygonPart(lan);
+      const [bx, by] = projected.path.centroid(part);
+      const x = bx + (ov?.dxMm ?? 0);
+      const y = by + (ov?.dyMm ?? 0);
+      if (!inFrame(x, y)) continue;
+      // shrink once, then skip, when the name outgrows its county
+      const [[px0], [px1]] = projected.path.bounds(part);
+      const partW = px1 - px0;
+      const text = label.toUpperCase();
+      let size = 2.3 * fontScale;
+      let trackingMm = size * 0.32;
+      let w = textWidthMm(text, size, false, 600, trackingMm);
+      if (w > partW * 0.85 && !ov) {
+        size = 1.85 * fontScale;
+        trackingMm = size * 0.32;
+        w = textWidthMm(text, size, false, 600, trackingMm);
+        if (w > partW * 0.95) continue;
+      }
+      boxes.push(textBox(x, y, w, size, 'middle'));
+      out.push({
+        id, text, x, y, anchor: 'middle', sizeMm: size, kind: 'region', weight: 600,
+        trackingMm, overridden: !!ov, baseX: bx, baseY: by,
+      });
     }
   }
 

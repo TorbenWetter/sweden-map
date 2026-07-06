@@ -22,6 +22,7 @@ const DEFAULT_FILTERS: Partial<Record<LayerId, LayerState['filters']>> = {
     seaLabels: true,
     lakeLabels: true,
     riverLabels: true,
+    regionLabels: false,
     neighborLabels: true,
   },
 };
@@ -133,7 +134,7 @@ export function topo(): Recipe {
     castles: { fill: '#6E4A2E', sizeMm: 2.4 },
     graticule: { stroke: '#7FA3B5', strokeWidthMm: 0.13, opacity: 0.8 },
     places: { fill: '#1A1A1A' },
-    labels: { fill: '#1A1A1A', stroke: '#3E6E85' },
+    labels: { fill: '#1A1A1A', stroke: '#3E6E85', filters: { regionLabels: true } },
   }, ['waterlines', 'bathymetry', 'contours', 'lighthouses', 'airports', 'castles']), {
     ink: '#1A1A1A',
     halo: '#EEF0DE',
@@ -197,7 +198,7 @@ export function vintage(): Recipe {
     castles: { fill: '#6E5B44', sizeMm: 2.4 },
     graticule: { stroke: '#9C917B', strokeWidthMm: 0.13, opacity: 0.7 },
     places: { fill: '#3F352A' },
-    labels: { fill: '#3F352A', stroke: '#5E7A74' },
+    labels: { fill: '#3F352A', stroke: '#5E7A74', filters: { regionLabels: true } },
   }, ['kommun', 'bathymetry', 'contours', 'trails', 'airports', 'castles']), {
     ink: '#3F352A',
     halo: '#F3EAD8',

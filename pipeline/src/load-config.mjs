@@ -20,6 +20,7 @@ if (process.argv.includes('--bash')) {
     `export ADMIN1=${q(c.adminLevels.admin1)}`,
     `export ADMIN2=${q(c.adminLevels.admin2)}`,
     `export EROAD_MAX=${q(c.eroadMaxNumber ?? 999)}`,
+    `export ADMIN1_STRIP=${q(c.admin1LabelStrip ?? '$^')}`,
     `export FRAME_XMIN=${q(c.frame.xmin)}`,
     `export FRAME_YMIN=${q(c.frame.ymin)}`,
     `export FRAME_XMAX=${q(c.frame.xmax)}`,
