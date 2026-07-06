@@ -272,6 +272,21 @@
         "bbox": null
       }
     },
+    "eroads": {
+      "tiered": false,
+      "preview": {
+        "file": "eroads.json",
+        "bytes": 1,
+        "features": 1,
+        "bbox": null
+      },
+      "print": {
+        "file": "eroads.json",
+        "bytes": 1,
+        "features": 1,
+        "bbox": null
+      }
+    },
     "lighthouses": {
       "tiered": false,
       "preview": {

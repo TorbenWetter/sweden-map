@@ -436,6 +436,39 @@ export function Artboard({ recipe, data, projected, layout, hillshade, interacti
                 ? (e: React.PointerEvent) => interactive.onLabelPointerDown(e, lab)
                 : undefined;
 
+              if (lab.kind === 'shield') {
+                const sh = layerMap.roads?.shields;
+                const w = lab.text.length * lab.sizeMm * 0.68 + 1.7;
+                const h = lab.sizeMm * 1.63;
+                return (
+                  <g key={lab.id}>
+                    <rect
+                      x={lab.x - w / 2}
+                      y={lab.y - h / 2}
+                      width={w}
+                      height={h}
+                      rx={0.55}
+                      fill={sh?.fill ?? '#2D8039'}
+                      stroke={sh?.text ?? '#FFFFFF'}
+                      strokeWidth={0.16}
+                      style={labelEditStyle}
+                      onPointerDown={onDown}
+                    />
+                    <text
+                      x={lab.x}
+                      y={lab.y + lab.sizeMm * 0.34}
+                      textAnchor="middle"
+                      fontSize={lab.sizeMm}
+                      fontWeight={700}
+                      fill={sh?.text ?? '#FFFFFF'}
+                      style={{ userSelect: 'none', pointerEvents: 'none' } as React.CSSProperties}
+                    >
+                      {lab.text}
+                    </text>
+                  </g>
+                );
+              }
+
               if (lab.pathD) {
                 // curved label: text flows on its own path; overrides shift the whole group
                 const pid = `lblp-${i}`;

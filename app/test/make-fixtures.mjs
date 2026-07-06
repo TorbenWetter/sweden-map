@@ -74,6 +74,9 @@ const trails = fc([
 const lighthouses = fc([feat(point(950000, 6440000), { name: 'Testfyren' })]);
 const airports = fc([feat(point(720000, 6560000), { name: 'Test Airport', iata: 'TST' })]);
 const castles = fc([feat(point(500000, 6500000), { name: 'Testslottet' })]);
+const eroads = fc([
+  feat(line([[380000, 6250000], [500000, 6900000], [560000, 7450000]]), { eref: 'E4' }),
+]);
 const bathymetry = fc([20, 50, 100, 200, 500].map((depth, i) =>
   feat(rect(940000 + i * 2000, 6300000, 1060000 - i * 2000, 7400000 - i * 30000), { depth }),
 ));
@@ -116,6 +119,7 @@ write('waterlines.json', waterlines);
 write('bathymetry.json', bathymetry);
 write('ferries.json', ferries);
 write('trails.json', trails);
+write('eroads.json', eroads);
 write('lighthouses.json', lighthouses);
 write('airports.json', airports);
 write('castles.json', castles);
@@ -131,6 +135,7 @@ const SINGLE_FILES = {
   bathymetry: 'bathymetry.json',
   ferries: 'ferries.json',
   trails: 'trails.json',
+  eroads: 'eroads.json',
   lighthouses: 'lighthouses.json',
   airports: 'airports.json',
   castles: 'castles.json',

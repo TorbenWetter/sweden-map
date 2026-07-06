@@ -282,6 +282,21 @@ function RoadsFilters({ layer, patch }: { layer: LayerState; patch: (fn: (l: Lay
           </>
         ) : null}
       </Section>
+      <Section title="E-road shields">
+        <CheckRow
+          label="Number badges (E4, E6…)"
+          checked={layer.shields?.on ?? false}
+          onChange={(v) => patch((l) => { l.shields = { on: v, fill: l.shields?.fill ?? '#2D8039', text: l.shields?.text ?? '#FFFFFF', everyMm: l.shields?.everyMm ?? 150 }; })}
+        />
+        {layer.shields?.on ? (
+          <>
+            <ColorField label="Shield" value={layer.shields.fill} onChange={(v) => patch((l) => { l.shields!.fill = v; })} />
+            <ColorField label="Text" value={layer.shields.text} onChange={(v) => patch((l) => { l.shields!.text = v; })} />
+            <RangeField label="Spacing" value={layer.shields.everyMm} min={80} max={300} display={(v) => `${Math.round(v)} mm`} onChange={(v) => patch((l) => (l.shields!.everyMm = v))} />
+            <div className="hint">Shields repeat along each route; drag any badge in label-edit mode.</div>
+          </>
+        ) : null}
+      </Section>
     </>
   );
 }

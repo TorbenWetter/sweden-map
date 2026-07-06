@@ -8,6 +8,7 @@
   "extractUrl": "https://download.geofabrik.de/europe/sweden-latest.osm.pbf",
   "osmCountryName": "Sverige",
   "adminLevels": { "country": "2", "admin1": "4", "admin2": "7" },
+  "eroadMaxNumber": 99,
   "frame": { "xmin": 45000, "ymin": 6098000, "xmax": 1145000, "ymax": 7707000 },
   "frame4326": [2, 53.5, 33, 71.5],
   "graticule": { "lonMin": 4, "lonMax": 32, "latMin": 54, "latMax": 71, "stepDeg": 2, "densifyDeg": 0.25 },

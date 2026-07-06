@@ -44,6 +44,7 @@ const layers = {
   waterlines: single('waterlines', 'waterlines.json'),
   ferries: single('ferries', 'ferries.json'),
   trails: single('trails', 'trails.json'),
+  eroads: single('eroads', 'eroads.json'),
   lighthouses: single('lighthouses', 'lighthouses.json'),
   airports: single('airports', 'airports.json'),
   castles: single('castles', 'castles.json'),

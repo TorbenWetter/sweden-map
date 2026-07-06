@@ -10,7 +10,7 @@ export interface PlacedLabel {
   y: number;
   anchor: 'start' | 'middle' | 'end';
   sizeMm: number;
-  kind: 'city' | 'sea' | 'lake' | 'neighbor' | 'river';
+  kind: 'city' | 'sea' | 'lake' | 'neighbor' | 'river' | 'shield';
   weight: number;
   italic?: boolean;
   trackingMm?: number;
@@ -198,6 +198,22 @@ export function layoutLabels(
     }
   }
 
+  // --- city dots are obstacles ---
+  const cities = (data.fc.places?.features ?? [])
+    .filter((c) => (c.properties.population ?? 0) >= (placesLayer?.filters.minPopulation ?? 0) || priority.has(c.properties.name))
+    .map((c) => {
+      const [x, y] = projected.toMm(c.geometry.coordinates[0], c.geometry.coordinates[1]);
+      return { f: c, x, y, pop: c.properties.population ?? 0 };
+    })
+    .filter((c) => inFrame(c.x, c.y));
+
+  if (placesLayer?.visible) {
+    for (const c of cities) {
+      const r = cityDotMm(c.pop);
+      boxes.push({ x0: c.x - r, y0: c.y - r, x1: c.x + r, y1: c.y + r });
+    }
+  }
+
   // --- river names flow along their own geometry (placed before cities so cities dodge them) ---
   // Selection uses the longest CONNECTED stem, not the dissolved per-name total: common
   // names (Svartån, Lillån…) merge many distinct small rivers into fake giants otherwise.
@@ -264,19 +280,44 @@ export function layoutLabels(
     }
   }
 
-  // --- city dots are obstacles ---
-  const cities = (data.fc.places?.features ?? [])
-    .filter((c) => (c.properties.population ?? 0) >= (placesLayer?.filters.minPopulation ?? 0) || priority.has(c.properties.name))
-    .map((c) => {
-      const [x, y] = projected.toMm(c.geometry.coordinates[0], c.geometry.coordinates[1]);
-      return { f: c, x, y, pop: c.properties.population ?? 0 };
-    })
-    .filter((c) => inFrame(c.x, c.y));
-
-  if (placesLayer?.visible) {
-    for (const c of cities) {
-      const r = cityDotMm(c.pop);
-      boxes.push({ x0: c.x - r, y0: c.y - r, x1: c.x + r, y1: c.y + r });
+  // --- E-road shields: repeated badges along each route; labels dodge them ---
+  const roadsLayer = layerOf(recipe, 'roads');
+  const sh = roadsLayer?.shields;
+  if (roadsLayer?.visible && sh?.on && data.fc.eroads) {
+    for (const road of data.fc.eroads.features) {
+      const eref = road.properties.eref as string;
+      const size = 1.9 * fontScale;
+      const w = textWidthMm(eref, size, false, 700) + 1.7;
+      const h = size * 1.63;
+      const parts = road.geometry.type === 'LineString' ? [road.geometry.coordinates] : road.geometry.coordinates;
+      let n = 0;
+      for (const part of parts as number[][][]) {
+        const pts = part.map(([e, nn]) => projected.toMm(e, nn));
+        let acc = (sh.everyMm ?? 150) / 2;
+        for (let i = 1; i < pts.length; i++) {
+          const seg = Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]);
+          while (acc <= seg) {
+            const t = acc / seg;
+            const bx = pts[i - 1][0] + (pts[i][0] - pts[i - 1][0]) * t;
+            const by = pts[i - 1][1] + (pts[i][1] - pts[i - 1][1]) * t;
+            acc += sh.everyMm ?? 150;
+            const id = `shield:${eref}:${n++}`;
+            const ov: LabelOverride | undefined = overrides[id];
+            if (ov?.hidden) continue;
+            const x = bx + (ov?.dxMm ?? 0);
+            const y = by + (ov?.dyMm ?? 0);
+            if (!inFrame(x, y)) continue;
+            const box = { x0: x - w / 2, y0: y - h / 2, x1: x + w / 2, y1: y + h / 2 };
+            if (!ov && collides(box, boxes)) continue;
+            boxes.push(box);
+            out.push({
+              id, text: eref, x, y, anchor: 'middle', sizeMm: size, kind: 'shield',
+              weight: 700, overridden: !!ov, baseX: bx, baseY: by,
+            });
+          }
+          acc -= seg;
+        }
+      }
     }
   }
 

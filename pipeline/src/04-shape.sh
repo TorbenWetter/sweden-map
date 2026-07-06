@@ -140,6 +140,20 @@ log "ferries…"
   -filter-fields name,length_km \
   -o format=topojson "$OUT/ferries.json"
 
+# --- E-roads: per-route lines for shield placement (refs like "E 4" or "E 4;E 20") ---
+log "e-roads…"
+"$MS" "$WORK/roads.geojson" \
+  -clip "$WORK/sweden0.geojson" \
+  -filter 'ref != null && /(^|;)\s*E ?\d+/.test(ref)' \
+  -each 'eref="E" + ref.match(/(?:^|;)\s*E ?(\d+)/)[1]' \
+  -filter "+eref.slice(1) <= $EROAD_MAX" \
+  -dissolve fields=eref \
+  -each 'length_km=Math.round(this.length/1000)' \
+  -filter 'length_km>=50' \
+  -simplify weighted interval=400 \
+  -filter-fields eref \
+  -o format=topojson "$OUT/eroads.json"
+
 # --- hiking trails: route relations, national (nwn) and regional (rwn) ---
 # Long trails are stage relations ("Kungsleden Etapp 25: …") — strip the stage
 # suffix before dissolving so stages fuse into their parent trail.

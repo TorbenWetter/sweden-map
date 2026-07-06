@@ -72,6 +72,14 @@ export interface Casing {
   extraMm: number;
 }
 
+export interface Shields {
+  on: boolean;
+  fill: string;
+  text: string;
+  /** paper distance between repeated shields along a route */
+  everyMm: number;
+}
+
 export interface LayerState {
   id: LayerId;
   visible: boolean;
@@ -86,6 +94,8 @@ export interface LayerState {
   classStyles?: Record<string, ClassStyle>;
   /** contrasting under-stroke beneath all classes (roads) */
   casing?: Casing;
+  /** E-road number badges along routes (roads) */
+  shields?: Shields;
   filters: LayerFilters;
 }
 

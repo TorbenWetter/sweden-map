@@ -1,0 +1,1 @@
+{"type":"Topology","objects":{"eroads_json":{"type":"GeometryCollection","geometries":[{"type":"LineString","arcs":[0],"properties":{"eref":"E4"}}]}},"arcs":[[[0,0],[6666,5416],[3333,4583]]],"bbox":[380000,6250000,560000,7450000],"transform":{"scale":[18.001800180018,120.01200120012001],"translate":[380000,6250000]}}
