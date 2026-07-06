@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { RAIL_USAGES, ROAD_CLASSES, ROAD_WIDTH_FACTOR, type Dash, type LayerId, type LayerState, type Recipe } from '../types';
 import { DUPLICABLE, layerOf, layerOfType, useStudio } from '../state/store';
 import { harmonize } from '../state/harmony';
+import { applyImagePalette, extractPalette, type Swatch } from '../state/imagePalette';
 import { CheckRow, ColorField, Field, NumberField, RangeField, Section, SelectField } from './controls';
 
 const DASH_OPTIONS: Array<{ value: Dash; label: string }> = [
@@ -328,6 +329,61 @@ function RoadsFilters({ layer, patch }: { layer: LayerState; patch: (fn: (l: Lay
   );
 }
 
+function ImagePalette() {
+  const update = useStudio((s) => s.update);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [swatches, setSwatches] = useState<Swatch[]>([]);
+
+  const onFile = (file: File) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const sw = extractPalette(img);
+      if (sw.length) {
+        setSwatches(sw);
+        update((r) => applyImagePalette(r, sw));
+      }
+    };
+    img.onerror = () => URL.revokeObjectURL(url);
+    img.src = url;
+  };
+
+  return (
+    <>
+      <Field label="From image">
+        <button className="chip" onClick={() => fileRef.current?.click()}>
+          Extract palette…
+        </button>
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          hidden
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) onFile(f);
+            e.target.value = '';
+          }}
+        />
+      </Field>
+      {swatches.length ? (
+        <div className="swatch-strip" title="Click a swatch to use it as the anchor instead">
+          {swatches.map((sw) => (
+            <button
+              key={sw.hex}
+              className="swatch"
+              style={{ background: sw.hex, flexGrow: Math.max(sw.weight * 10, 1) }}
+              title={sw.hex}
+              onClick={() => update((r) => harmonize(r, sw.hex))}
+            />
+          ))}
+        </div>
+      ) : null}
+    </>
+  );
+}
+
 const PAPER_PRESETS = [
   { label: 'A0', wMm: 841, hMm: 1189 },
   { label: 'A1', wMm: 594, hMm: 841 },
@@ -430,9 +486,11 @@ function LayoutTab() {
           checked={recipe.harmony?.lock ?? false}
           onChange={(v) => update((r) => (r.harmony = { lock: v }))}
         />
+        <ImagePalette />
         <div className="hint">
           Deriving sets sea, lakes, rivers, waterlines, depth, neighbors, parks and border tints
-          from one color. Accents (roads, rail, labels) stay yours.
+          from one color. Accents (roads, rail, labels) stay yours — except when a photo
+          supplies them.
         </div>
       </Section>
       <Section title="Colors & credits">

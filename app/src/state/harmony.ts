@@ -73,22 +73,22 @@ const ROLES: Array<{ id: LayerId; prop: 'fill' | 'stroke'; spec: RoleSpec }> = [
   { id: 'kommun', prop: 'stroke', spec: { family: 'water', dl: -0.145, ds: -0.2 } },
 ];
 
-function deriveRole(anchor: [number, number, number], spec: RoleSpec): string {
+function deriveRole(anchor: [number, number, number], spec: RoleSpec, waterHue = 205): string {
   const [h, s, l] = anchor;
   let hue: number;
   let sat: number;
   switch (spec.family) {
     case 'water':
-      hue = hueMix(h, 205, 0.95);
-      sat = Math.max(s, 0.22) + 0.06;
+      hue = hueMix(h, waterHue, 0.95);
+      sat = Math.min(0.34, Math.max(s, 0.2) + 0.04);
       break;
     case 'park':
       hue = hueMix(h, 100, 0.85);
-      sat = Math.max(s * 0.8, 0.18);
+      sat = Math.min(0.36, Math.max(s * 0.8, 0.18));
       break;
     default:
       hue = h;
-      sat = s * 0.65;
+      sat = Math.min(0.38, s * 0.65);
   }
   sat = Math.min(1, Math.max(0.03, sat + (spec.ds ?? 0)));
   const light = Math.min(0.98, Math.max(0.04, l + spec.dl));
@@ -100,14 +100,14 @@ function deriveRole(anchor: [number, number, number], spec: RoleSpec): string {
  * Accents — roads, railways, ferries, trails, shields, icons, labels, furniture —
  * are authored choices and stay untouched.
  */
-export function harmonize(recipe: Recipe, anchorHex: string): void {
+export function harmonize(recipe: Recipe, anchorHex: string, opts?: { waterHue?: number }): void {
   const anchor = hexToHsl(anchorHex);
   if (!anchor) return;
   for (const layer of recipe.layers) {
     if (layer.id === 'sweden') layer.fill = anchorHex;
     for (const role of ROLES) {
       if (role.id !== layer.id) continue;
-      layer[role.prop] = deriveRole(anchor, role.spec);
+      layer[role.prop] = deriveRole(anchor, role.spec, opts?.waterHue);
     }
   }
 }
