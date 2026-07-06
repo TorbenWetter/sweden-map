@@ -38,6 +38,7 @@ function buildLayers(styles: Record<LayerId, StylePatch>, hidden: LayerId[] = []
   return ORDER.map((id) => {
     const { filters: filterPatch, ...style } = styles[id] ?? {};
     return {
+      uid: id,
       id,
       visible: !hidden.includes(id),
       opacity: 1,

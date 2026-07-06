@@ -44,3 +44,18 @@ test('studio renders, labels, and restyles the map', async ({ page }) => {
   // instrument strip is alive
   await expect(page.getByText('SWEREF 99 TM · EPSG:3006')).toBeVisible();
 });
+
+test('layers duplicate as independent instances', async ({ page }) => {
+  await page.goto('/?preset=nordic');
+  await expect(page.getByTestId('artboard')).toBeVisible();
+
+  // select the Lakes layer and duplicate it
+  await page.locator('.layer-row').filter({ has: page.getByText('Lakes', { exact: true }) }).click();
+  await page.locator('.inspector-actions .link-btn', { hasText: 'Duplicate' }).click();
+  await expect(page.locator('.layer-row').filter({ has: page.getByText('Lakes copy', { exact: true }) })).toBeVisible();
+
+  // the duplicate is selected and independently deletable
+  await page.locator('.inspector-actions .link-btn', { hasText: 'Delete' }).click();
+  await expect(page.getByText('Lakes copy', { exact: true })).toHaveCount(0);
+  await expect(page.locator('.layer-row').filter({ has: page.getByText('Lakes', { exact: true }) })).toBeVisible();
+});

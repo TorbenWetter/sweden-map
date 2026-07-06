@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import type { PointerEvent as ReactPointerEvent } from 'react';
-import type { LayerId } from '../types';
-import { useStudio } from '../state/store';
+import type { LayerState } from '../types';
+import { DUPLICABLE, useStudio } from '../state/store';
 
 const ROW_H = 30;
 
@@ -11,16 +11,17 @@ export function LayersPanel() {
   const select = useStudio((s) => s.select);
   const update = useStudio((s) => s.update);
   const layerLabels = useStudio((s) => s.layerLabels);
+  const duplicateLayer = useStudio((s) => s.duplicateLayer);
 
   // display order: topmost drawn first
   const display = [...recipe.layers].reverse();
   const listRef = useRef<HTMLDivElement>(null);
-  const [drag, setDrag] = useState<{ id: LayerId; from: number; to: number } | null>(null);
+  const [drag, setDrag] = useState<{ uid: string; from: number; to: number } | null>(null);
 
-  const onHandleDown = (e: ReactPointerEvent, id: LayerId, index: number) => {
+  const onHandleDown = (e: ReactPointerEvent, uid: string, index: number) => {
     e.preventDefault();
     (e.currentTarget as Element).setPointerCapture(e.pointerId);
-    setDrag({ id, from: index, to: index });
+    setDrag({ uid, from: index, to: index });
   };
   const onHandleMove = (e: ReactPointerEvent) => {
     if (!drag || !listRef.current) return;
@@ -30,10 +31,10 @@ export function LayersPanel() {
   };
   const onHandleUp = () => {
     if (drag && drag.to !== drag.from) {
-      const { id, to } = drag;
+      const { uid, to } = drag;
       update((r) => {
         const arr = r.layers;
-        const fromArr = arr.findIndex((l) => l.id === id);
+        const fromArr = arr.findIndex((l) => l.uid === uid);
         const [moved] = arr.splice(fromArr, 1);
         // display index → array index (display is reversed)
         const toArr = arr.length - to;
@@ -48,16 +49,16 @@ export function LayersPanel() {
       <div className="panel-header">Layers</div>
       <div className="layers-list" ref={listRef}>
         {display.map((l, i) => (
-          <div key={l.id}>
+          <div key={l.uid}>
             {drag && drag.to === i && drag.to <= drag.from ? <div className="drop-line" /> : null}
             <div
-              className={`layer-row${selected === l.id ? ' selected' : ''}${drag?.id === l.id ? ' dragging' : ''}${l.visible ? '' : ' hidden-layer'}`}
-              onClick={() => select(l.id)}
+              className={`layer-row${selected === l.uid ? ' selected' : ''}${drag?.uid === l.uid ? ' dragging' : ''}${l.visible ? '' : ' hidden-layer'}`}
+              onClick={() => select(l.uid)}
             >
               <span
                 className="drag-handle"
                 title="Drag to reorder draw order"
-                onPointerDown={(e) => onHandleDown(e, l.id, i)}
+                onPointerDown={(e) => onHandleDown(e, l.uid, i)}
                 onPointerMove={onHandleMove}
                 onPointerUp={onHandleUp}
               >
@@ -69,14 +70,26 @@ export function LayersPanel() {
                 onClick={(e) => {
                   e.stopPropagation();
                   update((r) => {
-                    const t = r.layers.find((x) => x.id === l.id)!;
+                    const t = r.layers.find((x) => x.uid === l.uid)!;
                     t.visible = !t.visible;
                   });
                 }}
               >
                 {l.visible ? '●' : '○'}
               </button>
-              <span className="layer-name">{layerLabels[l.id]}</span>
+              <span className="layer-name">{l.label ?? layerLabels[l.id]}</span>
+              {DUPLICABLE.has(l.id) ? (
+                <button
+                  className="dup-btn"
+                  title="Duplicate layer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    duplicateLayer(l.uid);
+                  }}
+                >
+                  ⧉
+                </button>
+              ) : null}
               <span className="layer-swatch" style={{ background: l.fill ?? l.stroke ?? 'transparent' }} />
             </div>
             {drag && drag.to === i && drag.to > drag.from ? <div className="drop-line" /> : null}

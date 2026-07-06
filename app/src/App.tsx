@@ -7,7 +7,7 @@ import { TopBar } from './ui/TopBar';
 import { LayersPanel } from './ui/LayersPanel';
 import { Inspector } from './ui/Inspector';
 import { StatusBar } from './ui/StatusBar';
-import { layerOf, useStudio } from './state/store';
+import { layerOfType, useStudio } from './state/store';
 
 export default function App() {
   const tier = useStudio((s) => s.tier);
@@ -68,8 +68,8 @@ export default function App() {
   const labelKey = useMemo(
     () =>
       JSON.stringify({
-        labels: layerOf(recipe, 'labels'),
-        places: layerOf(recipe, 'places')?.filters,
+        labels: layerOfType(recipe, 'labels'),
+        places: layerOfType(recipe, 'places')?.filters,
         overrides: recipe.labelOverrides,
         paper: recipe.paper,
         frame: recipe.furniture.frame,

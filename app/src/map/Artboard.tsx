@@ -7,9 +7,9 @@ import { cityDotMm } from './labels';
 import { ROAD_CLASSES, ROAD_WIDTH_FACTOR, type Dash, type LayerId, type LayerState, type Recipe } from '../types';
 
 export interface ArtboardInteractive {
-  selected: LayerId | null;
+  selected: string | null;
   labelEdit: boolean;
-  onSelectLayer: (id: LayerId) => void;
+  onSelectLayer: (uid: string) => void;
   onLabelPointerDown: (e: ReactPointerEvent, label: PlacedLabel) => void;
 }
 
@@ -60,6 +60,154 @@ const ICON_GLYPHS: Record<string, { fill: string; stroke?: string }> = {
   },
 };
 
+type LayerPayload = {
+  d?: string;
+  byClass?: Record<string, string>;
+  byUsage?: Record<string, string>;
+  rings?: string[];
+  contours?: { normal: string; bold: string };
+  bathyClasses?: Array<{ depth: number; d: string }>;
+};
+
+// Per-instance path memoization, independent of React renders: results live per
+// (data, projection) pair and are keyed by uid + the filters that shape geometry.
+const pathCache = new WeakMap<object, WeakMap<object, Map<string, LayerPayload>>>();
+
+function layerPaths(l: LayerState, data: MapData, path: Projected['path']): LayerPayload {
+  let byPath = pathCache.get(data);
+  if (!byPath) {
+    byPath = new WeakMap();
+    pathCache.set(data, byPath);
+  }
+  let entries = byPath.get(path as unknown as object);
+  if (!entries) {
+    entries = new Map();
+    byPath.set(path as unknown as object, entries);
+  }
+  const key = `${l.uid}|${JSON.stringify(l.filters)}`;
+  const hit = entries.get(key);
+  if (hit) return hit;
+  if (entries.size > 80) entries.clear();
+
+  const fcOf = (feats: any[]) => ({ type: 'FeatureCollection', features: feats }) as any;
+  let payload: LayerPayload = {};
+
+  switch (l.id) {
+    case 'sweden':
+      payload = { d: data.fc.sweden ? path(data.fc.sweden as any) ?? '' : '' };
+      break;
+    case 'neighbors':
+      payload = { d: data.fc.neighbors ? path(data.fc.neighbors as any) ?? '' : '' };
+      break;
+    case 'neBorders':
+      payload = { d: data.fc.neBorders ? path(data.fc.neBorders as any) ?? '' : '' };
+      break;
+    case 'graticule':
+      payload = { d: data.fc.graticule ? path(data.fc.graticule as any) ?? '' : '' };
+      break;
+    case 'lan':
+    case 'kommun':
+      payload = { d: data.meshes[l.id] ? path(data.meshes[l.id]) ?? '' : '' };
+      break;
+    case 'lakes': {
+      const min = l.filters.minAreaKm2 ?? 0;
+      const feats = (data.fc.lakes?.features ?? []).filter((f) => (f.properties.area_km2 ?? 0) >= min);
+      payload = { d: feats.length ? path(fcOf(feats)) ?? '' : '' };
+      break;
+    }
+    case 'rivers': {
+      const min = l.filters.minLengthKm ?? 0;
+      const feats = (data.fc.rivers?.features ?? []).filter((f) => (f.properties.length_km ?? 0) >= min);
+      payload = { d: feats.length ? path(fcOf(feats)) ?? '' : '' };
+      break;
+    }
+    case 'parks': {
+      const kinds = l.filters.kinds;
+      const feats = (data.fc.parks?.features ?? []).filter((f) => kinds?.[f.properties.kind] !== false);
+      payload = { d: feats.length ? path(fcOf(feats)) ?? '' : '' };
+      break;
+    }
+    case 'ferries': {
+      const min = l.filters.minLengthKm ?? 0;
+      const feats = (data.fc.ferries?.features ?? []).filter((f) => (f.properties.length_km ?? 0) >= min);
+      payload = { d: feats.length ? path(fcOf(feats)) ?? '' : '' };
+      break;
+    }
+    case 'trails': {
+      const networks = l.filters.networks;
+      const min = l.filters.minLengthKm ?? 0;
+      const feats = (data.fc.trails?.features ?? []).filter(
+        (f) => (networks?.[f.properties.network] ?? true) && (f.properties.length_km ?? 0) >= min,
+      );
+      payload = { d: feats.length ? path(fcOf(feats)) ?? '' : '' };
+      break;
+    }
+    case 'roads': {
+      // group first: robust to datasets that ship several features per class
+      const groups: Record<string, any[]> = {};
+      for (const f of data.fc.roads?.features ?? []) {
+        (groups[f.properties.class] ??= []).push(f);
+      }
+      const byClass: Record<string, string> = {};
+      for (const [cls, feats] of Object.entries(groups)) {
+        byClass[cls] = path(fcOf(feats)) ?? '';
+      }
+      payload = { byClass };
+      break;
+    }
+    case 'railways': {
+      const groups: Record<string, any[]> = {};
+      for (const f of data.fc.railways?.features ?? []) {
+        (groups[f.properties.usage] ??= []).push(f);
+      }
+      const byUsage: Record<string, string> = {};
+      for (const [usage, feats] of Object.entries(groups)) {
+        byUsage[usage] = path(fcOf(feats)) ?? '';
+      }
+      payload = { byUsage };
+      break;
+    }
+    case 'waterlines': {
+      const rings = [1, 2, 3, 4].map((ring) => {
+        const feats = (data.fc.waterlines?.features ?? []).filter((f) => f.properties.ring === ring);
+        return feats.length ? path(fcOf(feats)) ?? '' : '';
+      });
+      payload = { rings };
+      break;
+    }
+    case 'contours': {
+      if (!data.fc.contours) {
+        payload = { contours: { normal: '', bold: '' } };
+        break;
+      }
+      const iv = Math.max(200, l.filters.intervalM ?? 400);
+      const boldEvery = l.filters.boldEveryM ?? 0;
+      const feats = data.fc.contours.features.filter((f) => f.properties.elev % iv === 0);
+      const normal = feats.length ? path(fcOf(feats)) ?? '' : '';
+      let bold = '';
+      if (boldEvery > 0) {
+        const bf = feats.filter((f) => f.properties.elev % boldEvery === 0);
+        bold = bf.length ? path(fcOf(bf)) ?? '' : '';
+      }
+      payload = { contours: { normal, bold } };
+      break;
+    }
+    case 'bathymetry': {
+      const bathyClasses = (data.fc.bathymetry?.features ?? [])
+        .map((f) => ({ depth: f.properties.depth as number, d: path(f as any) ?? '' }))
+        .filter((c) => c.d)
+        .sort((a, b) => a.depth - b.depth);
+      payload = { bathyClasses };
+      break;
+    }
+    default:
+      payload = {};
+  }
+
+  entries.set(key, payload);
+  return payload;
+}
+
 export function Artboard({ recipe, data, projected, layout, hillshade, interactive }: ArtboardProps) {
   const { path, toMm } = projected;
   const { wMm, hMm } = recipe.paper;
@@ -69,102 +217,16 @@ export function Artboard({ recipe, data, projected, layout, hillshade, interacti
   const clipW = wMm - inset * 2;
   const clipH = hMm - inset * 2;
 
-  const layerMap = useMemo(
-    () => Object.fromEntries(recipe.layers.map((l) => [l.id, l])) as Record<LayerId, LayerState>,
-    [recipe.layers],
-  );
-
-  // ---- memoized path strings ----
-  const dSweden = useMemo(() => (data.fc.sweden ? path(data.fc.sweden as any) ?? '' : ''), [data, path]);
-  const dNeighbors = useMemo(() => (data.fc.neighbors ? path(data.fc.neighbors as any) ?? '' : ''), [data, path]);
-  const dNeBorders = useMemo(() => (data.fc.neBorders ? path(data.fc.neBorders as any) ?? '' : ''), [data, path]);
-  const dGraticule = useMemo(() => (data.fc.graticule ? path(data.fc.graticule as any) ?? '' : ''), [data, path]);
-  const dBathyClasses = useMemo(() => {
-    if (!data.fc.bathymetry) return [] as Array<{ depth: number; d: string }>;
-    return data.fc.bathymetry.features
-      .map((f) => ({ depth: f.properties.depth as number, d: path(f as any) ?? '' }))
-      .filter((c) => c.d)
-      .sort((a, b) => a.depth - b.depth);
-  }, [data, path]);
-
-  const contourInterval = layerMap.contours?.filters.intervalM ?? 400;
-  const contourBold = layerMap.contours?.filters.boldEveryM ?? 0;
-  const dContours = useMemo(() => {
-    if (!data.fc.contours) return { normal: '', bold: '' };
-    const iv = Math.max(200, contourInterval);
-    const feats = data.fc.contours.features.filter((f) => f.properties.elev % iv === 0);
-    const normal = path({ type: 'FeatureCollection', features: feats } as any) ?? '';
-    let bold = '';
-    if (contourBold > 0) {
-      const bf = feats.filter((f) => f.properties.elev % contourBold === 0);
-      bold = bf.length ? path({ type: 'FeatureCollection', features: bf } as any) ?? '' : '';
-    }
-    return { normal, bold };
-  }, [data, path, contourInterval, contourBold]);
-
-  const dWaterlineRings = useMemo(() => {
-    if (!data.fc.waterlines) return [] as string[];
-    return [1, 2, 3, 4].map((ring) => {
-      const feats = data.fc.waterlines.features.filter((f) => f.properties.ring === ring);
-      return feats.length ? path({ type: 'FeatureCollection', features: feats } as any) ?? '' : '';
-    });
-  }, [data, path]);
-  const dLan = useMemo(() => (data.meshes.lan ? path(data.meshes.lan) ?? '' : ''), [data, path]);
-  const dKommun = useMemo(() => (data.meshes.kommun ? path(data.meshes.kommun) ?? '' : ''), [data, path]);
-
-  const lakesMin = layerMap.lakes?.filters.minAreaKm2 ?? 0;
-  const dLakes = useMemo(() => {
-    if (!data.fc.lakes) return '';
-    const feats = data.fc.lakes.features.filter((f) => (f.properties.area_km2 ?? 0) >= lakesMin);
-    return path({ type: 'FeatureCollection', features: feats } as any) ?? '';
-  }, [data, path, lakesMin]);
-
-  const trailNetworks = layerMap.trails?.filters.networks;
-  const trailsMin = layerMap.trails?.filters.minLengthKm ?? 0;
-  const dTrails = useMemo(() => {
-    if (!data.fc.trails) return '';
-    const feats = data.fc.trails.features.filter(
-      (f) => (trailNetworks?.[f.properties.network] ?? true) && (f.properties.length_km ?? 0) >= trailsMin,
-    );
-    return path({ type: 'FeatureCollection', features: feats } as any) ?? '';
-  }, [data, path, trailNetworks, trailsMin]);
-
-  const ferriesMin = layerMap.ferries?.filters.minLengthKm ?? 0;
-  const dFerries = useMemo(() => {
-    if (!data.fc.ferries) return '';
-    const feats = data.fc.ferries.features.filter((f) => (f.properties.length_km ?? 0) >= ferriesMin);
-    return path({ type: 'FeatureCollection', features: feats } as any) ?? '';
-  }, [data, path, ferriesMin]);
-
-  const riversMin = layerMap.rivers?.filters.minLengthKm ?? 0;
-  const dRivers = useMemo(() => {
-    if (!data.fc.rivers) return '';
-    const feats = data.fc.rivers.features.filter((f) => (f.properties.length_km ?? 0) >= riversMin);
-    return path({ type: 'FeatureCollection', features: feats } as any) ?? '';
-  }, [data, path, riversMin]);
-
-  const parkKinds = layerMap.parks?.filters.kinds;
-  const dParks = useMemo(() => {
-    if (!data.fc.parks) return '';
-    const feats = data.fc.parks.features.filter((f) => parkKinds?.[f.properties.kind] !== false);
-    return path({ type: 'FeatureCollection', features: feats } as any) ?? '';
-  }, [data, path, parkKinds]);
-
-  const dRoadsByClass = useMemo(() => {
-    const map: Record<string, string> = {};
-    for (const f of data.fc.roads?.features ?? []) {
-      map[f.properties.class] = path(f as any) ?? '';
+  // first instance per type — for type-level reads (bathymetry's sea color, shields, legend fallbacks)
+  const layerMap = useMemo(() => {
+    const map = {} as Record<LayerId, LayerState>;
+    for (const l of recipe.layers) {
+      if (!map[l.id]) map[l.id] = l;
     }
     return map;
-  }, [data, path]);
+  }, [recipe.layers]);
 
-  const dRailByUsage = useMemo(() => {
-    const map: Record<string, string> = {};
-    for (const f of data.fc.railways?.features ?? []) {
-      map[f.properties.usage] = path(f as any) ?? '';
-    }
-    return map;
-  }, [data, path]);
+  const dSweden = layerMap.sweden ? layerPaths(layerMap.sweden, data, path).d ?? '' : '';
 
   const cityDots = useMemo(() => {
     const minPop = layerMap.places?.filters.minPopulation ?? 0;
@@ -185,12 +247,12 @@ export function Artboard({ recipe, data, projected, layout, hillshade, interacti
     }).filter((c) => c.x > inset && c.x < wMm - inset && c.y > inset && c.y < hMm - inset),
   [data, toMm, inset, wMm, hMm]);
 
-  const click = (id: LayerId) =>
+  const click = (uid: string) =>
     interactive
       ? {
           onClick: (e: React.MouseEvent) => {
             e.stopPropagation();
-            interactive.onSelectLayer(id);
+            interactive.onSelectLayer(uid);
           },
           style: { cursor: 'pointer' } as React.CSSProperties,
         }
@@ -198,30 +260,31 @@ export function Artboard({ recipe, data, projected, layout, hillshade, interacti
 
   const renderLayer = (l: LayerState) => {
     if (!l.visible) return null;
-    const common = { key: l.id, opacity: l.opacity === 1 ? undefined : l.opacity };
+    const common = { key: l.uid, opacity: l.opacity === 1 ? undefined : l.opacity };
+    const p = layerPaths(l, data, path);
     switch (l.id) {
       case 'sea':
-        return <rect {...common} data-testid="sea" x={clipX} y={clipX} width={clipW} height={clipH} fill={l.fill} {...click('sea')} />;
+        return <rect {...common} data-testid="sea" x={clipX} y={clipX} width={clipW} height={clipH} fill={l.fill} {...click(l.uid)} />;
       case 'bathymetry': {
         const seaFill = layerMap.sea?.fill ?? '#DDE8EE';
         const deep = l.fill ?? seaFill;
-        const n = dBathyClasses.length;
+        const classes = p.bathyClasses ?? [];
         return (
-          <g {...common} key={l.id} {...click('bathymetry')}>
-            {dBathyClasses.map((c, idx) => (
-              <path key={c.depth} d={c.d} fill={lerpHex(seaFill, deep, (idx + 1) / Math.max(n, 1))} stroke="none" />
+          <g {...common} key={l.uid} {...click(l.uid)}>
+            {classes.map((c, idx) => (
+              <path key={c.depth} d={c.d} fill={lerpHex(seaFill, deep, (idx + 1) / Math.max(classes.length, 1))} stroke="none" />
             ))}
           </g>
         );
       }
       case 'contours':
         return (
-          <g {...common} key={l.id} {...click('contours')}>
-            {dContours.normal ? (
-              <path d={dContours.normal} fill="none" stroke={l.stroke} strokeWidth={l.strokeWidthMm ?? 0.09} strokeLinejoin="round" />
+          <g {...common} key={l.uid} {...click(l.uid)}>
+            {p.contours?.normal ? (
+              <path d={p.contours.normal} fill="none" stroke={l.stroke} strokeWidth={l.strokeWidthMm ?? 0.09} strokeLinejoin="round" />
             ) : null}
-            {dContours.bold ? (
-              <path d={dContours.bold} fill="none" stroke={l.stroke} strokeWidth={(l.strokeWidthMm ?? 0.09) * 2} strokeLinejoin="round" />
+            {p.contours?.bold ? (
+              <path d={p.contours.bold} fill="none" stroke={l.stroke} strokeWidth={(l.strokeWidthMm ?? 0.09) * 2} strokeLinejoin="round" />
             ) : null}
           </g>
         );
@@ -229,8 +292,8 @@ export function Artboard({ recipe, data, projected, layout, hillshade, interacti
         const rings = Math.max(1, Math.min(4, l.filters.rings ?? 4));
         const ringOpacity = [0.6, 0.42, 0.28, 0.16];
         return (
-          <g {...common} key={l.id} {...click('waterlines')}>
-            {dWaterlineRings.map((d, idx) =>
+          <g {...common} key={l.uid} {...click(l.uid)}>
+            {(p.rings ?? []).map((d, idx) =>
               idx < rings && d ? (
                 <path
                   key={idx}
@@ -258,7 +321,7 @@ export function Artboard({ recipe, data, projected, layout, hillshade, interacti
         return (
           <image
             {...common}
-            key={l.id}
+            key={l.uid}
             href={href}
             x={x0}
             y={y0}
@@ -269,43 +332,38 @@ export function Artboard({ recipe, data, projected, layout, hillshade, interacti
         );
       }
       case 'neighbors':
-        return <path {...common} d={dNeighbors} fill={l.fill} stroke="none" {...click('neighbors')} />;
+        return <path {...common} d={p.d} fill={l.fill} stroke="none" {...click(l.uid)} />;
       case 'neBorders':
-        return <path {...common} d={dNeBorders} fill="none" stroke={l.stroke} strokeWidth={l.strokeWidthMm} strokeLinejoin="round" strokeLinecap="round" strokeDasharray={dashArray(l.dash, l.strokeWidthMm ?? 0.2)} />;
+        return <path {...common} d={p.d} fill="none" stroke={l.stroke} strokeWidth={l.strokeWidthMm} strokeLinejoin="round" strokeLinecap="round" strokeDasharray={dashArray(l.dash, l.strokeWidthMm ?? 0.2)} />;
       case 'sweden':
-        return <path {...common} d={dSweden} fill={l.fill} stroke={l.stroke} strokeWidth={l.strokeWidthMm} strokeLinejoin="round" {...click('sweden')} />;
+        return <path {...common} d={p.d} fill={l.fill} stroke={l.stroke} strokeWidth={l.strokeWidthMm} strokeLinejoin="round" {...click(l.uid)} />;
       case 'parks':
-        return <path {...common} d={dParks} fill={l.fill} stroke={l.stroke} strokeWidth={l.strokeWidthMm} {...click('parks')} />;
+        return <path {...common} d={p.d} fill={l.fill} stroke={l.stroke} strokeWidth={l.strokeWidthMm} {...click(l.uid)} />;
       case 'lakes':
-        return <path {...common} d={dLakes} fill={l.fill} stroke={l.stroke} strokeWidth={l.strokeWidthMm} {...click('lakes')} />;
+        return <path {...common} d={p.d} fill={l.fill} stroke={l.stroke} strokeWidth={l.strokeWidthMm} {...click(l.uid)} />;
       case 'rivers':
-        return <path {...common} d={dRivers} fill="none" stroke={l.stroke} strokeWidth={l.strokeWidthMm} strokeLinecap="round" strokeLinejoin="round" {...click('rivers')} />;
+        return <path {...common} d={p.d} fill="none" stroke={l.stroke} strokeWidth={l.strokeWidthMm} strokeLinecap="round" strokeLinejoin="round" {...click(l.uid)} />;
       case 'kommun':
-        return (
-          <g {...common} key={l.id} clipPath={dSweden ? 'url(#sweden-clip)' : undefined}>
-            <path d={dKommun} fill="none" stroke={l.stroke} strokeWidth={l.strokeWidthMm} strokeLinejoin="round" strokeDasharray={dashArray(l.dash, l.strokeWidthMm ?? 0.12)} strokeLinecap={l.dash === 'dot' || l.dash === 'dashdot' ? 'round' : undefined} />
-          </g>
-        );
       case 'lan':
         return (
-          <g {...common} key={l.id} clipPath={dSweden ? 'url(#sweden-clip)' : undefined}>
-            <path d={dLan} fill="none" stroke={l.stroke} strokeWidth={l.strokeWidthMm} strokeLinejoin="round" strokeDasharray={dashArray(l.dash, l.strokeWidthMm ?? 0.26)} strokeLinecap={l.dash === 'dot' || l.dash === 'dashdot' ? 'round' : undefined} />
+          <g {...common} key={l.uid} clipPath={dSweden ? 'url(#sweden-clip)' : undefined}>
+            <path d={p.d} fill="none" stroke={l.stroke} strokeWidth={l.strokeWidthMm} strokeLinejoin="round" strokeDasharray={dashArray(l.dash, l.strokeWidthMm ?? 0.2)} strokeLinecap={l.dash === 'dot' || l.dash === 'dashdot' ? 'round' : undefined} />
           </g>
         );
       case 'roads': {
         const order = [...ROAD_CLASSES].reverse(); // minor first, motorway on top
-        const enabled = order.filter((cls) => l.filters.classes?.[cls] && dRoadsByClass[cls]);
+        const enabled = order.filter((cls) => l.filters.classes?.[cls] && p.byClass?.[cls]);
         const widthOf = (cls: string) =>
           l.classStyles?.[cls]?.strokeWidthMm ?? (l.strokeWidthMm ?? 0.5) * ROAD_WIDTH_FACTOR[cls];
         const colorOf = (cls: string) => l.classStyles?.[cls]?.stroke ?? l.stroke;
         const casing = l.casing;
         return (
-          <g {...common} key={l.id} {...click('roads')}>
+          <g {...common} key={l.uid} {...click(l.uid)}>
             {casing?.on
               ? enabled.map((cls) => (
                   <path
                     key={`casing-${cls}`}
-                    d={dRoadsByClass[cls]}
+                    d={p.byClass![cls]}
                     fill="none"
                     stroke={casing.color}
                     strokeWidth={widthOf(cls) + casing.extraMm * 2}
@@ -317,7 +375,7 @@ export function Artboard({ recipe, data, projected, layout, hillshade, interacti
             {enabled.map((cls) => (
               <path
                 key={cls}
-                d={dRoadsByClass[cls]}
+                d={p.byClass![cls]}
                 fill="none"
                 stroke={colorOf(cls)}
                 strokeWidth={widthOf(cls)}
@@ -330,12 +388,12 @@ export function Artboard({ recipe, data, projected, layout, hillshade, interacti
       }
       case 'railways':
         return (
-          <g {...common} key={l.id} {...click('railways')}>
+          <g {...common} key={l.uid} {...click(l.uid)}>
             {['main', 'branch'].map((usage) =>
-              l.filters.usages?.[usage] && dRailByUsage[usage] ? (
+              l.filters.usages?.[usage] && p.byUsage?.[usage] ? (
                 <path
                   key={usage}
-                  d={dRailByUsage[usage]}
+                  d={p.byUsage[usage]}
                   fill="none"
                   stroke={l.stroke}
                   strokeWidth={(l.strokeWidthMm ?? 0.28) * (usage === 'branch' ? 0.75 : 1)}
@@ -350,28 +408,28 @@ export function Artboard({ recipe, data, projected, layout, hillshade, interacti
         return (
           <path
             {...common}
-            d={dTrails}
+            d={p.d}
             fill="none"
             stroke={l.stroke}
             strokeWidth={l.strokeWidthMm}
             strokeLinecap="round"
             strokeLinejoin="round"
             strokeDasharray={dashArray(l.dash ?? 'dot', l.strokeWidthMm ?? 0.22)}
-            {...click('trails')}
+            {...click(l.uid)}
           />
         );
       case 'ferries':
         return (
           <path
             {...common}
-            d={dFerries}
+            d={p.d}
             fill="none"
             stroke={l.stroke}
             strokeWidth={l.strokeWidthMm}
             strokeLinecap="round"
             strokeLinejoin="round"
             strokeDasharray={dashArray(l.dash ?? 'dash', l.strokeWidthMm ?? 0.18)}
-            {...click('ferries')}
+            {...click(l.uid)}
           />
         );
       case 'lighthouses':
@@ -382,7 +440,7 @@ export function Artboard({ recipe, data, projected, layout, hillshade, interacti
         const scale = (l.sizeMm ?? 2.6) / 10;
         const halo = recipe.furniture.halo;
         return (
-          <g {...common} key={l.id} {...click(l.id)}>
+          <g {...common} key={l.uid} {...click(l.uid)}>
             {feats.map((f, i) => {
               const [x, y] = toMm(f.geometry.coordinates[0], f.geometry.coordinates[1]);
               if (x < inset || x > wMm - inset || y < inset || y > hMm - inset) return null;
@@ -399,10 +457,10 @@ export function Artboard({ recipe, data, projected, layout, hillshade, interacti
         );
       }
       case 'graticule':
-        return <path {...common} d={dGraticule} fill="none" stroke={l.stroke} strokeWidth={l.strokeWidthMm} strokeDasharray={dashArray(l.dash, l.strokeWidthMm ?? 0.12)} />;
+        return <path {...common} d={p.d} fill="none" stroke={l.stroke} strokeWidth={l.strokeWidthMm} strokeDasharray={dashArray(l.dash, l.strokeWidthMm ?? 0.12)} />;
       case 'places':
         return (
-          <g {...common} key={l.id} {...click('places')}>
+          <g {...common} key={l.uid} {...click(l.uid)}>
             {cityDots.map((c) => {
               const r = cityDotMm(c.pop);
               return (
@@ -424,7 +482,7 @@ export function Artboard({ recipe, data, projected, layout, hillshade, interacti
       case 'labels': {
         const halo = recipe.furniture.halo;
         return (
-          <g {...common} key={l.id}>
+          <g {...common} key={l.uid}>
             {layout.labels.map((lab, i) => {
               const waterish = lab.kind === 'sea' || lab.kind === 'lake' || lab.kind === 'river';
               const fill = waterish ? l.stroke : l.fill;
@@ -539,25 +597,51 @@ export function Artboard({ recipe, data, projected, layout, hillshade, interacti
   const fu = recipe.furniture;
   const legendItems = useMemo(() => {
     const items: Array<{ kind: 'line' | 'dash' | 'rect' | 'dot' | 'icon'; color: string; w?: number; label: string; dash?: Dash; icon?: string }> = [];
-    const L = layerMap;
     const t = (key: string, fallback: string) => data.manifest.legendLabels?.[key] ?? fallback;
-    if (L.roads?.visible) items.push({ kind: 'line', color: L.roads.stroke ?? '#000', w: L.roads.strokeWidthMm, label: t('roads', 'Major road') });
-    if (L.railways?.visible) items.push({ kind: 'dash', color: L.railways.stroke ?? '#000', w: L.railways.strokeWidthMm, label: t('railways', 'Railway'), dash: L.railways.dash });
-    if (L.ferries?.visible) items.push({ kind: 'dash', color: L.ferries.stroke ?? '#789', w: L.ferries.strokeWidthMm, label: t('ferries', 'Ferry'), dash: L.ferries.dash ?? 'dash' });
-    if (L.trails?.visible) items.push({ kind: 'dash', color: L.trails.stroke ?? '#a52', w: L.trails.strokeWidthMm, label: t('trails', 'Trail'), dash: L.trails.dash ?? 'dot' });
-    if (L.lakes?.visible) items.push({ kind: 'rect', color: L.lakes.fill ?? '#9cf', label: t('lakes', 'Lake') });
-    if (L.parks?.visible) items.push({ kind: 'rect', color: L.parks.fill ?? '#cfc', label: t('parks', 'National park') });
-    if (L.lan?.visible) items.push({ kind: 'line', color: L.lan.stroke ?? '#888', w: L.lan.strokeWidthMm, label: t('lan', 'Region border'), dash: L.lan.dash });
-    if (L.kommun?.visible) items.push({ kind: 'line', color: L.kommun.stroke ?? '#aaa', w: L.kommun.strokeWidthMm, label: t('kommun', 'Municipality border'), dash: L.kommun.dash });
-    if (L.places?.visible) items.push({ kind: 'dot', color: L.places.fill ?? '#000', label: t('places', 'Town') });
-    const iconFallback = { lighthouses: 'Lighthouse', airports: 'Airport', castles: 'Castle' } as const;
-    for (const iconId of ['lighthouses', 'airports', 'castles'] as const) {
-      if (L[iconId]?.visible) {
-        items.push({ kind: 'icon', color: L[iconId].fill ?? '#333', label: t(iconId, iconFallback[iconId]), icon: iconId });
+    const fallbacks: Partial<Record<LayerId, string>> = {
+      roads: 'Major road', railways: 'Railway', ferries: 'Ferry', trails: 'Trail', lakes: 'Lake',
+      parks: 'National park', lan: 'Region border', kommun: 'Municipality border', places: 'Town',
+      lighthouses: 'Lighthouse', airports: 'Airport', castles: 'Castle',
+    };
+    // one row per visible INSTANCE, so duplicated layers explain themselves
+    for (const l of recipe.layers) {
+      if (!l.visible || !(l.id in fallbacks)) continue;
+      const label = l.label ?? t(l.id, fallbacks[l.id]!);
+      switch (l.id) {
+        case 'roads':
+          items.push({ kind: 'line', color: l.stroke ?? '#000', w: l.strokeWidthMm, label });
+          break;
+        case 'railways':
+          items.push({ kind: 'dash', color: l.stroke ?? '#000', w: l.strokeWidthMm, label, dash: l.dash });
+          break;
+        case 'ferries':
+          items.push({ kind: 'dash', color: l.stroke ?? '#789', w: l.strokeWidthMm, label, dash: l.dash ?? 'dash' });
+          break;
+        case 'trails':
+          items.push({ kind: 'dash', color: l.stroke ?? '#a52', w: l.strokeWidthMm, label, dash: l.dash ?? 'dot' });
+          break;
+        case 'lakes':
+          items.push({ kind: 'rect', color: l.fill ?? '#9cf', label });
+          break;
+        case 'parks':
+          items.push({ kind: 'rect', color: l.fill ?? '#cfc', label });
+          break;
+        case 'lan':
+        case 'kommun':
+          items.push({ kind: 'line', color: l.stroke ?? '#888', w: l.strokeWidthMm, label, dash: l.dash });
+          break;
+        case 'places':
+          items.push({ kind: 'dot', color: l.fill ?? '#000', label });
+          break;
+        case 'lighthouses':
+        case 'airports':
+        case 'castles':
+          items.push({ kind: 'icon', color: l.fill ?? '#333', label, icon: l.id });
+          break;
       }
     }
     return items;
-  }, [layerMap, data.manifest.legendLabels]);
+  }, [recipe.layers, data.manifest.legendLabels]);
 
   const scalebar = useMemo(() => {
     const target = 45; // mm
@@ -664,7 +748,7 @@ export function Artboard({ recipe, data, projected, layout, hillshade, interacti
           {legendItems.map((it, i) => {
             const y = i * 5.4;
             return (
-              <g key={it.label} transform={`translate(0 ${y})`}>
+              <g key={`${it.label}-${i}`} transform={`translate(0 ${y})`}>
                 {it.kind === 'icon' && it.icon ? (
                   <g transform="translate(3.5 -0.9) scale(0.24)">
                     <path d={ICON_GLYPHS[it.icon].fill} fill={it.color} />

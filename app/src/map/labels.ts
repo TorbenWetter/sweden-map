@@ -1,7 +1,7 @@
 import type { FC, MapData } from './data';
 import type { Projected } from './projection';
 import type { LabelOverride, Recipe } from '../types';
-import { layerOf } from '../state/store';
+import { layerOfType } from '../state/store';
 
 export interface PlacedLabel {
   id: string;
@@ -145,8 +145,8 @@ export function layoutLabels(
   projected: Projected,
   recipe: Recipe,
 ): LabelLayout {
-  const labelsLayer = layerOf(recipe, 'labels');
-  const placesLayer = layerOf(recipe, 'places');
+  const labelsLayer = layerOfType(recipe, 'labels');
+  const placesLayer = layerOfType(recipe, 'places');
   const out: PlacedLabel[] = [];
   const skipped: string[] = [];
   if (!labelsLayer?.visible) return { labels: out, skipped };
@@ -271,7 +271,7 @@ export function layoutLabels(
   // --- river names flow along their own geometry (placed before cities so cities dodge them) ---
   // Selection uses the longest CONNECTED stem, not the dissolved per-name total: common
   // names (Svartån, Lillån…) merge many distinct small rivers into fake giants otherwise.
-  const riversLayer = layerOf(recipe, 'rivers');
+  const riversLayer = layerOfType(recipe, 'rivers');
   if ((f.riverLabels ?? true) && riversLayer?.visible && data.fc.rivers) {
     const stemKm = (coords: number[][]) => {
       let m = 0;
@@ -335,7 +335,7 @@ export function layoutLabels(
   }
 
   // --- E-road shields: repeated badges along each route; labels dodge them ---
-  const roadsLayer = layerOf(recipe, 'roads');
+  const roadsLayer = layerOfType(recipe, 'roads');
   const sh = roadsLayer?.shields;
   if (roadsLayer?.visible && sh?.on && data.fc.eroads) {
     for (const road of data.fc.eroads.features) {

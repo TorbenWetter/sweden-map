@@ -893,3 +893,45 @@ input[type='range']:hover::-webkit-slider-thumb {
 .link-btn:hover {
   text-decoration: underline;
 }
+
+/* ---------- layer instance actions ---------- */
+
+.dup-btn {
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  color: var(--text-500);
+  font-size: 11px;
+  opacity: 0;
+}
+
+.layer-row:hover .dup-btn,
+.dup-btn:focus-visible {
+  opacity: 1;
+}
+
+.dup-btn:hover {
+  background: var(--ink-750);
+  color: var(--text-100);
+}
+
+.inspector-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.inspector-head .inspector-title {
+  margin-bottom: 0;
+}
+
+.inspector-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.inspector-actions .link-btn {
+  margin-top: 0;
+}

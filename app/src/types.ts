@@ -82,7 +82,12 @@ export interface Shields {
 }
 
 export interface LayerState {
+  /** stable instance identity (recipes may hold several instances of one type) */
+  uid: string;
+  /** layer type: data source + renderer */
   id: LayerId;
+  /** custom display name for duplicated instances */
+  label?: string;
   visible: boolean;
   opacity: number;
   fill?: string;

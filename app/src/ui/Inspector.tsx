@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { RAIL_USAGES, ROAD_CLASSES, ROAD_WIDTH_FACTOR, type Dash, type LayerId, type LayerState, type Recipe } from '../types';
-import { layerOf, useStudio } from '../state/store';
+import { DUPLICABLE, layerOf, useStudio } from '../state/store';
 import { CheckRow, ColorField, Field, NumberField, RangeField, Section, SelectField } from './controls';
 
 const DASH_OPTIONS: Array<{ value: Dash; label: string }> = [
@@ -42,6 +42,8 @@ function LayerTab() {
   const selected = useStudio((s) => s.selected);
   const update = useStudio((s) => s.update);
   const layerLabels = useStudio((s) => s.layerLabels);
+  const duplicateLayer = useStudio((s) => s.duplicateLayer);
+  const removeLayer = useStudio((s) => s.removeLayer);
   const layer = selected ? layerOf(recipe, selected) : undefined;
 
   if (!layer) {
@@ -50,9 +52,11 @@ function LayerTab() {
 
   const patch = (fn: (l: LayerState) => void) =>
     update((r) => {
-      const t = layerOf(r, layer.id);
+      const t = layerOf(r, layer.uid);
       if (t) fn(t);
     });
+
+  const siblings = recipe.layers.filter((l) => l.id === layer.id).length;
 
   const hasFill = ['sea', 'bathymetry', 'neighbors', 'sweden', 'parks', 'lakes', 'places', 'labels', 'lighthouses', 'airports', 'castles'].includes(layer.id);
   const isIcon = ['lighthouses', 'airports', 'castles'].includes(layer.id);
@@ -61,7 +65,22 @@ function LayerTab() {
 
   return (
     <>
-      <div className="inspector-title">{layerLabels[layer.id]}</div>
+      <div className="inspector-head">
+        <div className="inspector-title">{layer.label ?? layerLabels[layer.id]}</div>
+        {DUPLICABLE.has(layer.id) ? (
+          <div className="inspector-actions">
+            <button className="link-btn" title="Duplicate this layer with its settings" onClick={() => duplicateLayer(layer.uid)}>Duplicate</button>
+            {siblings > 1 ? (
+              <button className="link-btn" title="Remove this layer instance" onClick={() => removeLayer(layer.uid)}>Delete</button>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
+      {siblings > 1 ? (
+        <Field label="Name">
+          <input type="text" value={layer.label ?? ''} placeholder={layerLabels[layer.id]} onChange={(e) => patch((l) => (l.label = e.target.value || undefined))} />
+        </Field>
+      ) : null}
       <Section title="Style">
         <CheckRow label="Visible" checked={layer.visible} onChange={(v) => patch((l) => (l.visible = v))} />
         <RangeField label="Opacity" value={layer.opacity} min={0} max={1} step={0.01} display={(v) => `${Math.round(v * 100)}%`} onChange={(v) => patch((l) => (l.opacity = v))} />
