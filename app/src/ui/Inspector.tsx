@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { RAIL_USAGES, ROAD_CLASSES, ROAD_WIDTH_FACTOR, type Dash, type LayerId, type LayerState, type Recipe } from '../types';
-import { DUPLICABLE, layerOf, useStudio } from '../state/store';
+import { DUPLICABLE, layerOf, layerOfType, useStudio } from '../state/store';
+import { harmonize } from '../state/harmony';
 import { CheckRow, ColorField, Field, NumberField, RangeField, Section, SelectField } from './controls';
 
 const DASH_OPTIONS: Array<{ value: Dash; label: string }> = [
@@ -88,7 +89,13 @@ function LayerTab() {
           <ColorField
             label={layer.id === 'places' ? 'Dot color' : layer.id === 'labels' ? 'Text color' : layer.id === 'bathymetry' ? 'Deep water' : 'Fill'}
             value={layer.fill ?? '#000000'}
-            onChange={(v) => patch((l) => (l.fill = v))}
+            onChange={(v) =>
+              update((r) => {
+                const t = layerOf(r, layer.uid);
+                if (t) t.fill = v;
+                if (layer.id === 'sweden' && r.harmony?.lock) harmonize(r, v);
+              })
+            }
           />
         ) : null}
         {layer.id === 'labels' ? (
@@ -411,6 +418,22 @@ function LayoutTab() {
         <CheckRow label="North arrow" checked={fu.north.show} onChange={(v) => f((x) => (x.north.show = v))} />
         <NumberField label="X" value={fu.north.xMm} unit="mm" onChange={(v) => f((x) => (x.north.xMm = v))} />
         <NumberField label="Y" value={fu.north.yMm} unit="mm" onChange={(v) => f((x) => (x.north.yMm = v))} />
+      </Section>
+      <Section title="Color harmony">
+        <ColorField
+          label="Anchor"
+          value={layerOfType(recipe, 'sweden')?.fill ?? '#F7F5F0'}
+          onChange={(v) => update((r) => harmonize(r, v))}
+        />
+        <CheckRow
+          label="Keep tints in sync with land"
+          checked={recipe.harmony?.lock ?? false}
+          onChange={(v) => update((r) => (r.harmony = { lock: v }))}
+        />
+        <div className="hint">
+          Deriving sets sea, lakes, rivers, waterlines, depth, neighbors, parks and border tints
+          from one color. Accents (roads, rail, labels) stay yours.
+        </div>
       </Section>
       <Section title="Colors & credits">
         <ColorField label="Furniture ink" value={fu.ink} onChange={(v) => f((x) => (x.ink = v))} />

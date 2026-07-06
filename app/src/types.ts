@@ -141,6 +141,8 @@ export interface Recipe {
   layers: LayerState[];
   labelOverrides: Record<string, LabelOverride>;
   furniture: Furniture;
+  /** when locked, editing the land color re-derives all tint roles from it */
+  harmony?: { lock: boolean };
 }
 
 export interface FileInfo {
