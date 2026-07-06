@@ -22,11 +22,16 @@ pnpm dev                 # → http://localhost:5173
 
 ## Using the studio
 
-- **Layers panel (left)** — click to select, `●` toggles visibility, drag `⋮⋮` to change draw order (top of list = drawn on top).
+- **Layers panel (left)** — click to select, `●` toggles visibility, drag `⋮⋮` to change draw order
+  (top of list = drawn on top). Hover `⧉` duplicates a layer into an independent instance —
+  e.g. big lakes bold above a faint all-lakes wash — renameable and deletable in the Inspector.
 - **Inspector (right)** — the selected layer's colors, widths, opacity, and filters
-  (road classes, min lake area, min river length, city population thresholds…).
-  The Paper tab sets size (A0/A1/A2/50×70/custom) and the optional white frame;
-  the Layout tab drives title, legend, scale bar, north arrow, attribution.
+  (road classes with per-class overrides and casings, E-road shields, min lake area,
+  river/ferry/trail length thresholds, contour interval, waterline ring count, city
+  population thresholds…). The Paper tab sets size (A0/A1/A2/50×70/custom) and the optional
+  white frame; the Layout tab drives title, legend, scale bar, north arrow, attribution —
+  plus **color harmony** (derive all tints from one anchor color, optionally locked to the
+  land color) and **palette-from-image** (extract a photo's palette onto the map).
 - **Presets (top)** — ten styles in the gallery picker: Nordic, Fjällrelief (Imhof-style relief hero), Topo,
   Vintage, Etsning (b/w etching), Sextiotal (mid-century tourism), Dark, Polarnatt (aurora night),
   Cyanotype (blueprint), Blågul (flag duotone). Applying one replaces the design but keeps your paper size;
@@ -50,7 +55,7 @@ Its blend mode is switchable: *multiply* darkens (light themes), *screen* invert
 
 | Source | Used for | License |
 |---|---|---|
-| [Geofabrik Sweden extract](https://download.geofabrik.de/europe/sweden.html) (OSM) | borders, lakes, rivers, roads, railways, parks, places | ODbL — keep the attribution line on published posters |
+| [Geofabrik Sweden extract](https://download.geofabrik.de/europe/sweden.html) (OSM) | borders, lakes, rivers, roads, E-routes, railways, ferries, hiking trails, parks, places, lighthouses, airports, castles | ODbL — keep the attribution line on published posters |
 | [osmdata land polygons](https://osmdata.openstreetmap.de/) | coastline & islands | ODbL |
 | Natural Earth 10m | neighbor national borders | public domain |
 | Copernicus DEM GLO-90 | hillshade, contour lines | free, © ESA attribution |
