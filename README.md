@@ -32,10 +32,17 @@ pnpm dev                 # → http://localhost:5173
   white frame; the Layout tab drives title, legend, scale bar, north arrow, attribution —
   plus **color harmony** (derive all tints from one anchor color, optionally locked to the
   land color) and **palette-from-image** (extract a photo's palette onto the map).
-- **Presets (top)** — ten styles in the gallery picker: Nordic, Fjällrelief (Imhof-style relief hero), Topo,
-  Vintage, Etsning (b/w etching), Sextiotal (mid-century tourism), Dark, Polarnatt (aurora night),
-  Cyanotype (blueprint), Blågul (flag duotone). Applying one replaces the design but keeps your paper size;
-  `?preset=aurora` in the URL opens any preset fresh.
+- **Presets (top)** — seventeen styles in the gallery picker, each a starting point into a
+  different corner of map art: Nordic (minimalism), Pappersklipp (cut-paper pastels),
+  Fjällrelief (Imhof-style relief hero), Höjdkurvor (contour-line art), Topo (the full
+  reference sheet), Skolatlas (antique atlas with banded county borders), Sjökort (nautical
+  chart), Vildmark (roadless parks & trails), Sextiotal (mid-century tourism), Risograf
+  (two-ink print), Etsning (b/w etching), Cyanotype (blueprint), Vägnät (roads-only data
+  art), Blågul (flag duotone), Dark, Polarnatt (aurora night), Neonstad (synthwave).
+  Presets lean on layer *instances* — dual lakes, double-line atlas borders, index contours,
+  a faint road web under amber arteries — so they double as worked examples of the layer
+  system. Applying one replaces the design but keeps your paper size; `?preset=aurora`
+  in the URL opens any preset fresh.
 - **Labels button** — label-edit mode: drag any place name; offsets persist in the recipe. Undo with ⌘Z.
 - **Viewport** — wheel scrolls, pinch or ⌘-wheel zooms, drag pans, double-click fits, `1:1` shows true print size.
 - **Save / Load** — recipes as `.json` files (also autosaved to localStorage).
