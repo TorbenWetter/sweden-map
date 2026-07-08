@@ -237,6 +237,7 @@ function LayerFilters({ layer, patch }: { layer: LayerState; patch: (fn: (l: Lay
           <CheckRow label="Region names (län)" checked={layer.filters.regionLabels ?? false} onChange={(v) => patch((l) => (l.filters.regionLabels = v))} />
           <CheckRow label="River names" checked={layer.filters.riverLabels ?? true} onChange={(v) => patch((l) => (l.filters.riverLabels = v))} />
           <CheckRow label="Neighbor capitals" checked={layer.filters.neighborLabels ?? true} onChange={(v) => patch((l) => (l.filters.neighborLabels = v))} />
+          <CheckRow label="Serif labels" checked={layer.filters.serifLabels ?? false} onChange={(v) => patch((l) => (l.filters.serifLabels = v))} />
         </Section>
       );
     default:

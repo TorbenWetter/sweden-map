@@ -51,6 +51,8 @@ export interface LayerFilters {
   riverLabels?: boolean;
   regionLabels?: boolean;
   neighborLabels?: boolean;
+  /** labels: render map labels in the serif stack (atlas/antique styles) */
+  serifLabels?: boolean;
   /** hillshade: multiply darkens (light themes), screen glows inverted relief (dark themes) */
   blend?: 'multiply' | 'screen';
   /** waterlines: how many concentric rings render (1–4) */

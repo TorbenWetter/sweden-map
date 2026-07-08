@@ -62,12 +62,15 @@ function collides(b: Box, boxes: Box[]): boolean {
 }
 
 let measureCtx: CanvasRenderingContext2D | null = null;
+// mirrors Artboard's SERIF_STACK so collision widths match the rendered font
+const SERIF_STACK = "'Iowan Old Style', 'Palatino', 'Georgia', serif";
+let measureFamily = 'Inter, sans-serif';
 function textWidthMm(text: string, sizeMm: number, italic = false, weight = 500, trackingMm = 0): number {
   if (!measureCtx) {
     measureCtx = document.createElement('canvas').getContext('2d');
   }
   if (!measureCtx) return text.length * sizeMm * 0.55;
-  measureCtx.font = `${italic ? 'italic ' : ''}${weight} ${sizeMm * 8}px Inter, sans-serif`;
+  measureCtx.font = `${italic ? 'italic ' : ''}${weight} ${sizeMm * 8}px ${measureFamily}`;
   return measureCtx.measureText(text).width / 8 + trackingMm * Math.max(0, text.length - 1);
 }
 
@@ -150,6 +153,7 @@ export function layoutLabels(
   const out: PlacedLabel[] = [];
   const skipped: string[] = [];
   if (!labelsLayer?.visible) return { labels: out, skipped };
+  measureFamily = labelsLayer.filters.serifLabels ? SERIF_STACK : 'Inter, sans-serif';
 
   const { wMm, hMm } = recipe.paper;
   const inset = recipe.furniture.frame.show ? recipe.furniture.frame.insetMm : 0;

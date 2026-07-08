@@ -482,7 +482,7 @@ export function Artboard({ recipe, data, projected, layout, hillshade, interacti
       case 'labels': {
         const halo = recipe.furniture.halo;
         return (
-          <g {...common} key={l.uid}>
+          <g {...common} key={l.uid} fontFamily={l.filters.serifLabels ? SERIF_STACK : undefined}>
             {layout.labels.map((lab, i) => {
               const waterish = lab.kind === 'sea' || lab.kind === 'lake' || lab.kind === 'river';
               const fill = waterish ? l.stroke : l.fill;
@@ -519,6 +519,7 @@ export function Artboard({ recipe, data, projected, layout, hillshade, interacti
                       fontSize={lab.sizeMm}
                       fontWeight={700}
                       fill={sh?.text ?? '#FFFFFF'}
+                      fontFamily="Inter, 'Helvetica Neue', sans-serif"
                       style={{ userSelect: 'none', pointerEvents: 'none' } as React.CSSProperties}
                     >
                       {lab.text}
