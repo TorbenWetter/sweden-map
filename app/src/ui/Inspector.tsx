@@ -19,6 +19,16 @@ const CLASS_LABELS: Record<string, string> = {
   secondary: 'Secondary',
 };
 
+// Dots and names each carry their own threshold, so a log slider's raw value made two
+// sliders that both *read* "20k" sit at 19 956 and 20 492 — and every town in between
+// got a dot with no name. Snapping to one ladder makes equal readings equal values.
+const POP_STEPS = [
+  1000, 1500, 2000, 3000, 4000, 5000, 7500, 10000, 15000, 20000,
+  25000, 30000, 40000, 50000, 75000, 100000, 150000, 200000,
+];
+const snapPop = (v: number) => POP_STEPS.reduce((best, c) => (Math.abs(c - v) < Math.abs(best - v) ? c : best), POP_STEPS[0]);
+const showPop = (v: number) => `${Math.round(v / 100) / 10}k`;
+
 type Tab = 'layer' | 'paper' | 'layout';
 
 export function Inspector() {
@@ -220,17 +230,26 @@ function LayerFilters({ layer, patch }: { layer: LayerState; patch: (fn: (l: Lay
           <CheckRow label="Large nature reserves" checked={layer.filters.kinds?.nature_reserve ?? false} onChange={(v) => patch((l) => { (l.filters.kinds ??= {}).nature_reserve = v; })} />
         </Section>
       );
+    case 'castles':
+      return (
+        <Section title="Kinds">
+          <CheckRow label="Castles, palaces & fortresses" checked={layer.filters.kinds?.castle ?? true} onChange={(v) => patch((l) => { (l.filters.kinds ??= {}).castle = v; })} />
+          <CheckRow label="Manor houses (herrgårdar)" checked={layer.filters.kinds?.manor ?? false} onChange={(v) => patch((l) => { (l.filters.kinds ??= {}).manor = v; })} />
+          <div className="hint">Only sites mapped as a building footprint or backed by a Wikidata entry — that keeps out the mis-tagged cannons and vanished ruins OSM files under historic=castle.</div>
+        </Section>
+      );
     case 'places':
       return (
         <Section title="Filter">
-          <RangeField label="Min population" value={layer.filters.minPopulation ?? 0} min={1000} max={200000} log display={(v) => `${Math.round(v / 1000)}k`} onChange={(v) => patch((l) => (l.filters.minPopulation = Math.round(v)))} />
-          <div className="hint">County seats always show.</div>
+          <RangeField label="Min population" value={layer.filters.minPopulation ?? 0} min={1000} max={200000} log snap={snapPop} display={showPop} onChange={(v) => patch((l) => (l.filters.minPopulation = Math.round(v)))} />
+          <div className="hint">County seats always show. Set the label threshold to the same figure to name every dot.</div>
         </Section>
       );
     case 'labels':
       return (
         <Section title="Labeling">
-          <RangeField label="Min population" value={layer.filters.labelMinPopulation ?? 0} min={1000} max={200000} log display={(v) => `${Math.round(v / 1000)}k`} onChange={(v) => patch((l) => (l.filters.labelMinPopulation = Math.round(v)))} />
+          <RangeField label="Min population" value={layer.filters.labelMinPopulation ?? 0} min={1000} max={200000} log snap={snapPop} display={showPop} onChange={(v) => patch((l) => (l.filters.labelMinPopulation = Math.round(v)))} />
+          <div className="hint">Matches the city-dot threshold notch for notch. A dot can still go unnamed when the name has nowhere to sit — the status bar counts those.</div>
           <RangeField label="Font scale" value={layer.filters.fontScale ?? 1} min={0.7} max={1.6} step={0.01} display={(v) => `${Math.round(v * 100)}%`} onChange={(v) => patch((l) => (l.filters.fontScale = v))} />
           <CheckRow label="Sea names" checked={layer.filters.seaLabels ?? true} onChange={(v) => patch((l) => (l.filters.seaLabels = v))} />
           <CheckRow label="Lake names" checked={layer.filters.lakeLabels ?? true} onChange={(v) => patch((l) => (l.filters.lakeLabels = v))} />
@@ -297,6 +316,12 @@ function RoadsFilters({ layer, patch }: { layer: LayerState; patch: (fn: (l: Lay
         ) : (
           <div className="hint">Classes inherit the road color and width-per-class factors until you override them here.</div>
         )}
+        <div className="hint">
+          Motorway and trunk describe the <em>road</em>, not the route: motorway means grade-separated
+          dual carriageway, trunk means a major road built to a lesser standard. A single E-road drops
+          between the two wherever the build quality changes, so E4 and E6 are motorway near the cities
+          and trunk through the north. Give both classes one color to draw the route as it is signed.
+        </div>
       </Section>
       <Section title="Casing">
         <CheckRow
@@ -422,7 +447,8 @@ function PaperTab() {
         </div>
         <NumberField label="Width" value={recipe.paper.wMm} min={100} max={2000} unit="mm" onChange={(v) => setPaper((p) => (p.wMm = v))} />
         <NumberField label="Height" value={recipe.paper.hMm} min={100} max={2000} unit="mm" onChange={(v) => setPaper((p) => (p.hMm = v))} />
-        <NumberField label="Map margin" value={recipe.paper.marginMm} min={0} max={120} unit="mm" onChange={(v) => setPaper((p) => (p.marginMm = v))} />
+        <NumberField label="Map margin" value={recipe.paper.marginMm} min={-120} max={120} unit="mm" onChange={(v) => setPaper((p) => (p.marginMm = v))} />
+        <div className="hint">Clearance between the country and the paper edge. At 0 the sea, terrain and neighbor land bleed to the trim; a large positive margin can pull the edge of the source data into view. Negative values crop into the country.</div>
       </Section>
       <Section title="Frame">
         <CheckRow label="White frame border" checked={recipe.furniture.frame.show} onChange={(v) => update((r) => (r.furniture.frame.show = v))} />

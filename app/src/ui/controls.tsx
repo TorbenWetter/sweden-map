@@ -47,7 +47,7 @@ export function ColorField({ label, value, onChange }: { label: string; value: s
 }
 
 export function RangeField({
-  label, value, min, max, step, display, onChange, log,
+  label, value, min, max, step, display, onChange, log, snap,
 }: {
   label: string;
   value: number;
@@ -56,12 +56,17 @@ export function RangeField({
   step?: number;
   log?: boolean;
   display?: (v: number) => string;
+  /** quantize to a ladder of round values, so two sliders reading the same land on the same number */
+  snap?: (v: number) => number;
   onChange: (v: number) => void;
 }) {
   const begin = useStudio((s) => s.beginTransient);
   const end = useStudio((s) => s.endTransient);
   const toSlider = (v: number) => (log ? Math.log(Math.max(v, min)) : v);
-  const fromSlider = (v: number) => (log ? Math.exp(v) : v);
+  const fromSlider = (v: number) => {
+    const raw = log ? Math.exp(v) : v;
+    return snap ? snap(raw) : raw;
+  };
   return (
     <Field label={label} wide>
       <input
