@@ -4,8 +4,19 @@ import { loadMapData, type MapData } from '../map/data';
 import { layoutLabels, type LabelLayout } from '../map/labels';
 import { makeProjection, type Projected } from '../map/projection';
 import type { Recipe, Tier } from '../types';
+import inter400 from '@fontsource/inter/files/inter-latin-400-normal.woff2?url';
+import inter500 from '@fontsource/inter/files/inter-latin-500-normal.woff2?url';
+import inter600 from '@fontsource/inter/files/inter-latin-600-normal.woff2?url';
+import inter700 from '@fontsource/inter/files/inter-latin-700-normal.woff2?url';
 
 export const PRINT_PAYLOAD_KEY = 'sweden-map-studio.print.v1';
+
+const INTER_WEIGHTS: Array<[number, string]> = [
+  [400, inter400],
+  [500, inter500],
+  [600, inter600],
+  [700, inter700],
+];
 
 export interface Composition {
   data: MapData;
@@ -36,16 +47,32 @@ async function toDataURL(url: string): Promise<string> {
   });
 }
 
-export function svgMarkup(recipe: Recipe, c: Composition, hillshadeHref: string | null): string {
+/** @font-face rules with the webfont bytes inlined — a standalone SVG can't reach the app's CSS. */
+async function fontFaceCss(): Promise<string> {
+  const faces = await Promise.all(
+    INTER_WEIGHTS.map(async ([weight, url]) => {
+      const data = await toDataURL(url);
+      return `@font-face{font-family:'Inter';font-style:normal;font-weight:${weight};src:url(${data}) format('woff2');}`;
+    }),
+  );
+  return faces.join('');
+}
+
+export function svgMarkup(recipe: Recipe, c: Composition, hillshadeHref: string | null, fontCss = ''): string {
   const { wMm, hMm } = recipe.paper;
   const body = renderToStaticMarkup(
     <svg
       xmlns="http://www.w3.org/2000/svg"
+      // textPath/href below serializes to xlink:href — without this declaration the
+      // file is not well-formed XML, and every strict parser (browsers viewing the
+      // .svg, the PNG rasterizer) stops at the first curved label.
+      xmlnsXlink="http://www.w3.org/1999/xlink"
       width={`${wMm}mm`}
       height={`${hMm}mm`}
       viewBox={`0 0 ${wMm} ${hMm}`}
       fontFamily="Inter, 'Helvetica Neue', sans-serif"
     >
+      {fontCss ? <style dangerouslySetInnerHTML={{ __html: fontCss }} /> : null}
       <Artboard recipe={recipe} data={c.data} projected={c.projected} layout={c.layout} hillshade={hillshadeHref ? { dark: hillshadeHref, light: hillshadeHref } : null} />
     </svg>,
   );
@@ -68,23 +95,37 @@ function download(blob: Blob, filename: string) {
 /** True-vector SVG at print detail. Hillshade (if visible) embeds as a data URL. */
 export async function exportSvg(recipe: Recipe): Promise<void> {
   const c = await compose(recipe, 'print');
-  const href = c.hillshadeUrl ? await toDataURL(c.hillshadeUrl) : null;
-  const markup = svgMarkup(recipe, c, href);
+  const [href, fontCss] = await Promise.all([
+    c.hillshadeUrl ? toDataURL(c.hillshadeUrl) : Promise.resolve(null),
+    fontFaceCss(),
+  ]);
+  const markup = svgMarkup(recipe, c, href, fontCss);
   download(new Blob([markup], { type: 'image/svg+xml' }), `${slug(recipe.name)}-${recipe.paper.wMm}x${recipe.paper.hMm}mm.svg`);
 }
 
+/** Browsers refuse to allocate beyond ~2^28 canvas pixels; fail with advice, not a decode error. */
+const MAX_CANVAS_PX = 268_000_000;
+
 /** Rasterize at a chosen dpi via an offscreen canvas. */
 export async function exportPng(recipe: Recipe, dpi: 150 | 300): Promise<void> {
+  const w = Math.round((recipe.paper.wMm / 25.4) * dpi);
+  const h = Math.round((recipe.paper.hMm / 25.4) * dpi);
+  if (w * h > MAX_CANVAS_PX) {
+    throw new Error(
+      `${w}×${h} px exceeds what a browser canvas can hold. Use 150 dpi, a smaller paper size, or export PDF/SVG (both stay vector).`,
+    );
+  }
   const c = await compose(recipe, 'print');
-  const href = c.hillshadeUrl ? await toDataURL(c.hillshadeUrl) : null;
-  const markup = svgMarkup(recipe, c, href);
+  const [href, fontCss] = await Promise.all([
+    c.hillshadeUrl ? toDataURL(c.hillshadeUrl) : Promise.resolve(null),
+    fontFaceCss(),
+  ]);
+  const markup = svgMarkup(recipe, c, href, fontCss);
   const svgUrl = URL.createObjectURL(new Blob([markup], { type: 'image/svg+xml' }));
   try {
     const img = new Image();
     img.src = svgUrl;
     await img.decode();
-    const w = Math.round((recipe.paper.wMm / 25.4) * dpi);
-    const h = Math.round((recipe.paper.hMm / 25.4) * dpi);
     const canvas = document.createElement('canvas');
     canvas.width = w;
     canvas.height = h;
