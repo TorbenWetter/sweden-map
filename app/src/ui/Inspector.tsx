@@ -12,6 +12,12 @@ const DASH_OPTIONS: Array<{ value: Dash; label: string }> = [
   { value: 'dashdot', label: 'Dash-dot' },
 ];
 
+// the sleepered rail line belongs to railways and nowhere else
+const RAIL_DASH_OPTIONS: Array<{ value: Dash; label: string }> = [
+  { value: 'hatch', label: 'Hatched — sleepers (classic rail)' },
+  ...DASH_OPTIONS,
+];
+
 const CLASS_LABELS: Record<string, string> = {
   motorway: 'Motorway',
   trunk: 'Trunk',
@@ -119,7 +125,12 @@ function LayerTab() {
           </>
         ) : null}
         {hasDash ? (
-          <SelectField label="Line style" value={layer.dash ?? 'solid'} options={DASH_OPTIONS} onChange={(v) => patch((l) => (l.dash = v))} />
+          <SelectField
+            label="Line style"
+            value={layer.dash ?? 'solid'}
+            options={layer.id === 'railways' ? RAIL_DASH_OPTIONS : DASH_OPTIONS}
+            onChange={(v) => patch((l) => (l.dash = v))}
+          />
         ) : null}
         {isIcon ? (
           <NumberField label="Icon size" value={layer.sizeMm ?? 2.6} step={0.2} min={1} max={8} unit="mm" onChange={(v) => patch((l) => (l.sizeMm = v))} />

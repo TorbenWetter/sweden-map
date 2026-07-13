@@ -25,7 +25,8 @@ export type LayerId =
   | 'places'
   | 'labels';
 
-export type Dash = 'solid' | 'dash' | 'dot' | 'dashdot';
+/** 'hatch' is the sleepered rail line — only railways render it */
+export type Dash = 'solid' | 'dash' | 'dot' | 'dashdot' | 'hatch';
 
 export interface LayerFilters {
   /** roads: which highway classes render */

@@ -386,24 +386,45 @@ export function Artboard({ recipe, data, projected, layout, hillshade, interacti
           </g>
         );
       }
-      case 'railways':
+      case 'railways': {
+        // the surveyor's hatched rail: a dark line, then the paper tint dashed back over
+        // it, leaving the sleepers as rungs — reads as track, not as one more road class
+        const tie = recipe.furniture.halo;
         return (
           <g {...common} key={l.uid} {...click(l.uid)}>
-            {['main', 'branch'].map((usage) =>
-              l.filters.usages?.[usage] && p.byUsage?.[usage] ? (
+            {['main', 'branch'].map((usage) => {
+              if (!l.filters.usages?.[usage] || !p.byUsage?.[usage]) return null;
+              const w = (l.strokeWidthMm ?? 0.28) * (usage === 'branch' ? 0.75 : 1);
+              if (l.dash === 'hatch') {
+                return (
+                  <g key={usage}>
+                    <path d={p.byUsage[usage]} fill="none" stroke={l.stroke} strokeWidth={w} strokeLinejoin="round" />
+                    <path
+                      d={p.byUsage[usage]}
+                      fill="none"
+                      stroke={tie}
+                      strokeWidth={w * 0.55}
+                      strokeLinejoin="round"
+                      strokeDasharray={`${w * 1.7} ${w * 1.7}`}
+                    />
+                  </g>
+                );
+              }
+              return (
                 <path
                   key={usage}
                   d={p.byUsage[usage]}
                   fill="none"
                   stroke={l.stroke}
-                  strokeWidth={(l.strokeWidthMm ?? 0.28) * (usage === 'branch' ? 0.75 : 1)}
+                  strokeWidth={w}
                   strokeLinejoin="round"
                   strokeDasharray={dashArray(l.dash, l.strokeWidthMm ?? 0.28)}
                 />
-              ) : null,
-            )}
+              );
+            })}
           </g>
         );
+      }
       case 'trails':
         return (
           <path
@@ -761,6 +782,11 @@ export function Artboard({ recipe, data, projected, layout, hillshade, interacti
                   <g transform="translate(3.5 -0.9) scale(0.24)">
                     <path d={ICON_GLYPHS[it.icon].fill} fill={it.color} />
                     {ICON_GLYPHS[it.icon].stroke ? <path d={ICON_GLYPHS[it.icon].stroke!} fill="none" stroke={it.color} strokeWidth={0.8} strokeLinecap="round" /> : null}
+                  </g>
+                ) : it.dash === 'hatch' ? (
+                  <g>
+                    <line x1={0} y1={-0.9} x2={7} y2={-0.9} stroke={it.color} strokeWidth={Math.max(it.w ?? 0.4, 0.5)} />
+                    <line x1={0} y1={-0.9} x2={7} y2={-0.9} stroke={fu.halo} strokeWidth={Math.max(it.w ?? 0.4, 0.5) * 0.55} strokeDasharray={`${Math.max(it.w ?? 0.4, 0.5) * 1.7} ${Math.max(it.w ?? 0.4, 0.5) * 1.7}`} />
                   </g>
                 ) : it.kind === 'rect' ? (
                   <rect x={0} y={-2.6} width={7} height={3.4} fill={it.color} />
