@@ -99,6 +99,40 @@ function arcPath(cx: number, cy: number, widthMm: number, angleDeg: number): str
   return `M ${r(x0)} ${r(y0)} Q ${r(qx)} ${r(qy)} ${r(x1)} ${r(y1)}`;
 }
 
+/**
+ * A gentle curve through pts, as a cubic path (Catmull-Rom → Bézier).
+ * River labels ride a *smoothed* extract of the river, never its raw meanders:
+ * setting type on every wiggle is what makes curved names look drunk.
+ */
+function smoothPath(pts: Array<[number, number]>): string {
+  const r = (v: number) => Math.round(v * 100) / 100;
+  if (pts.length < 3) return `M ${r(pts[0][0])} ${r(pts[0][1])} L ${r(pts[1][0])} ${r(pts[1][1])}`;
+  // two passes of a 1-2-1 kernel flatten high-frequency bends, keeping the overall trend
+  let p = pts;
+  for (let pass = 0; pass < 2; pass++) {
+    p = p.map((pt, i) => {
+      if (i === 0 || i === p.length - 1) return pt;
+      return [
+        (p[i - 1][0] + 2 * pt[0] + p[i + 1][0]) / 4,
+        (p[i - 1][1] + 2 * pt[1] + p[i + 1][1]) / 4,
+      ] as [number, number];
+    });
+  }
+  let d = `M ${r(p[0][0])} ${r(p[0][1])}`;
+  for (let i = 0; i < p.length - 1; i++) {
+    const p0 = p[i - 1] ?? p[i];
+    const p1 = p[i];
+    const p2 = p[i + 1];
+    const p3 = p[i + 2] ?? p2;
+    const c1x = p1[0] + (p2[0] - p0[0]) / 6;
+    const c1y = p1[1] + (p2[1] - p0[1]) / 6;
+    const c2x = p2[0] - (p3[0] - p1[0]) / 6;
+    const c2y = p2[1] - (p3[1] - p1[1]) / 6;
+    d += ` C ${r(c1x)} ${r(c1y)} ${r(c2x)} ${r(c2y)} ${r(p2[0])} ${r(p2[1])}`;
+  }
+  return d;
+}
+
 /** Longest LineString of a (Multi)LineString geometry, as coordinate array. */
 function longestLine(geometry: any): number[][] {
   if (geometry.type === 'LineString') return geometry.coordinates;
@@ -302,34 +336,58 @@ export function layoutLabels(
       const size = 1.85 * fontScale;
       const w = textWidthMm(name, size, true, 500, 0.15);
 
-      let pts = stem.map(([e, n]) => projected.toMm(e, n));
+      const pts = stem.map(([e, n]) => projected.toMm(e, n));
       if (pts.length < 2) continue;
       const cum = [0];
       for (let i = 1; i < pts.length; i++) {
         cum.push(cum[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
       }
       const total = cum[cum.length - 1];
-      if (total < w * 1.5) continue; // too short on paper for its name
+      const span = w * 1.12; // the text rides this much of the river, not all of it
+      if (total < span * 1.3) continue; // too short on paper for its name
       const pointAt = (t: number): [number, number] => {
+        const c = Math.max(0, Math.min(total, t));
         let i = 1;
-        while (i < cum.length - 1 && cum[i] < t) i++;
-        const f0 = (t - cum[i - 1]) / Math.max(cum[i] - cum[i - 1], 1e-9);
+        while (i < cum.length - 1 && cum[i] < c) i++;
+        const f0 = (c - cum[i - 1]) / Math.max(cum[i] - cum[i - 1], 1e-9);
         return [
           pts[i - 1][0] + (pts[i][0] - pts[i - 1][0]) * f0,
           pts[i - 1][1] + (pts[i][1] - pts[i - 1][1]) * f0,
         ];
       };
-      const [mx, my] = pointAt(total * 0.5);
+
+      // Pick the straightest stretch that fits the name: chord ÷ arc length is 1 on a
+      // straight reach and drops as it meanders. A name on a hairpin is unreadable
+      // however well it's set, so choose the reach instead of always taking the middle.
+      const SAMPLES = 12;
+      let best: { center: number; straight: number } | null = null;
+      for (let s = 0; s <= 10; s++) {
+        const center = span / 2 + ((total - span) * s) / 10;
+        const a = pointAt(center - span / 2);
+        const b = pointAt(center + span / 2);
+        const chord = Math.hypot(b[0] - a[0], b[1] - a[1]);
+        const straight = chord / span - Math.abs(center / total - 0.5) * 0.12; // nudge toward mid-river
+        if (!best || straight > best.straight) best = { center, straight };
+      }
+      if (!best || best.straight < 0.6) continue; // no reach straight enough to read
+      const [mx, my] = pointAt(best.center);
       // culling and collision use the final (override-shifted) position
       const x = mx + (ov?.dxMm ?? 0);
       const y = my + (ov?.dyMm ?? 0);
       if (!inFrame(x, y)) continue;
-      // keep the name upright: reverse the path when it reads right-to-left at the middle
-      if (pointAt(total * 0.58)[0] < pointAt(total * 0.42)[0]) pts = [...pts].reverse();
-      const r2 = (v: number) => Math.round(v * 100) / 100;
-      const d = 'M' + pts.map((p) => `${r2(p[0])} ${r2(p[1])}`).join('L');
 
-      boxes.push({ x0: x - w / 2, y0: y - size, x1: x + w / 2, y1: y + size * 0.4 });
+      let win: Array<[number, number]> = Array.from({ length: SAMPLES + 1 }, (_, i) =>
+        pointAt(best!.center - span / 2 + (span * i) / SAMPLES),
+      );
+      // keep the name upright: reverse when the reach reads right-to-left
+      if (win[win.length - 1][0] < win[0][0]) win = win.reverse();
+      const d = smoothPath(win);
+
+      const wx0 = Math.min(...win.map((p) => p[0]));
+      const wx1 = Math.max(...win.map((p) => p[0]));
+      const wy0 = Math.min(...win.map((p) => p[1]));
+      const wy1 = Math.max(...win.map((p) => p[1]));
+      boxes.push({ x0: wx0, y0: wy0 - size, x1: wx1, y1: wy1 + size * 0.4 });
       out.push({
         id, text: name, x, y, anchor: 'middle',
         sizeMm: size, kind: 'river', weight: 500, italic: true, trackingMm: 0.15,
@@ -347,33 +405,78 @@ export function layoutLabels(
       const size = 1.9 * fontScale;
       const w = textWidthMm(eref, size, false, 700) + 1.7;
       const h = size * 1.63;
+      const every = sh.everyMm ?? 150;
       const parts = road.geometry.type === 'LineString' ? [road.geometry.coordinates] : road.geometry.coordinates;
       let n = 0;
+      let placed = 0;
+
+      // A route's parts are spatially disjoint, so distance *along the route* jumps at
+      // every part boundary and can drop two badges within millimetres of each other.
+      // Spacing is a visual property: enforce it in paper distance, per route.
+      const mine: Array<[number, number]> = [];
+      const tooClose = (x: number, y: number) =>
+        mine.some(([px, py]) => Math.hypot(x - px, y - py) < every * 0.55);
+
+      const tryShield = (bx: number, by: number, force: boolean): boolean => {
+        const id = `shield:${eref}:${n++}`;
+        const ov: LabelOverride | undefined = overrides[id];
+        if (ov?.hidden) return false;
+        const x = bx + (ov?.dxMm ?? 0);
+        const y = by + (ov?.dyMm ?? 0);
+        if (!inFrame(x, y)) return false;
+        if (!ov && tooClose(x, y)) return false;
+        const box = { x0: x - w / 2, y0: y - h / 2, x1: x + w / 2, y1: y + h / 2 };
+        if (!ov && !force && collides(box, boxes)) return false;
+        boxes.push(box);
+        mine.push([x, y]);
+        out.push({
+          id, text: eref, x, y, anchor: 'middle', sizeMm: size, kind: 'shield',
+          weight: 700, overridden: !!ov, baseX: bx, baseY: by,
+        });
+        placed++;
+        return true;
+      };
+
+      // One accumulator for the whole route, not one per part: a dissolved route is a
+      // MultiLineString of many short pieces, and restarting the count on each piece
+      // meant pieces shorter than half the spacing never got a badge — which is why
+      // shields came and went with the paper size.
+      let acc = every / 2;
+      const longest: { pts: Array<[number, number]>; len: number } = { pts: [], len: -1 };
       for (const part of parts as number[][][]) {
-        const pts = part.map(([e, nn]) => projected.toMm(e, nn));
-        let acc = (sh.everyMm ?? 150) / 2;
+        const pts = part.map(([e, nn]) => projected.toMm(e, nn)) as Array<[number, number]>;
+        let partLen = 0;
         for (let i = 1; i < pts.length; i++) {
           const seg = Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]);
+          partLen += seg;
           while (acc <= seg) {
             const t = acc / seg;
-            const bx = pts[i - 1][0] + (pts[i][0] - pts[i - 1][0]) * t;
-            const by = pts[i - 1][1] + (pts[i][1] - pts[i - 1][1]) * t;
-            acc += sh.everyMm ?? 150;
-            const id = `shield:${eref}:${n++}`;
-            const ov: LabelOverride | undefined = overrides[id];
-            if (ov?.hidden) continue;
-            const x = bx + (ov?.dxMm ?? 0);
-            const y = by + (ov?.dyMm ?? 0);
-            if (!inFrame(x, y)) continue;
-            const box = { x0: x - w / 2, y0: y - h / 2, x1: x + w / 2, y1: y + h / 2 };
-            if (!ov && collides(box, boxes)) continue;
-            boxes.push(box);
-            out.push({
-              id, text: eref, x, y, anchor: 'middle', sizeMm: size, kind: 'shield',
-              weight: 700, overridden: !!ov, baseX: bx, baseY: by,
-            });
+            tryShield(
+              pts[i - 1][0] + (pts[i][0] - pts[i - 1][0]) * t,
+              pts[i - 1][1] + (pts[i][1] - pts[i - 1][1]) * t,
+              false,
+            );
+            acc += every;
           }
           acc -= seg;
+        }
+        if (partLen > longest.len) {
+          longest.len = partLen;
+          longest.pts = pts;
+        }
+      }
+
+      // A route that ends up with no badge at all is worse than a slightly crowded one:
+      // walk its longest piece and take the first spot that clears, else force the midpoint.
+      if (placed === 0 && longest.pts.length > 1) {
+        const p = longest.pts;
+        for (const t of [0.5, 0.35, 0.65, 0.2, 0.8]) {
+          const i = Math.max(1, Math.min(p.length - 1, Math.round(t * (p.length - 1))));
+          if (tryShield(p[i][0], p[i][1], false)) break;
+        }
+        if (placed === 0) {
+          const i = Math.max(1, Math.round((p.length - 1) / 2));
+          tryShield(p[i][0], p[i][1], true);
         }
       }
     }
@@ -381,19 +484,29 @@ export function layoutLabels(
 
   // --- cities: greedy by priority ---
   const minPop = f.labelMinPopulation ?? 0;
-  const candidatesFor = (x: number, y: number, r: number, size: number, w: number) => {
-    const dE = r + 0.9;
-    const dDiag = (r + 0.9) * 0.8;
+  const ringAt = (x: number, y: number, r: number, size: number, reach: number) => {
+    const dE = r + 0.9 * reach;
+    const dDiag = dE * 0.8;
     return [
       { x: x + dE, y: y + size * 0.28, anchor: 'start' as const },
       { x: x - dE, y: y + size * 0.28, anchor: 'end' as const },
-      { x, y: y - r - 0.8, anchor: 'middle' as const },
-      { x, y: y + r + size * 0.85, anchor: 'middle' as const },
+      { x, y: y - r - 0.8 * reach, anchor: 'middle' as const },
+      { x, y: y + r + size * 0.85 * reach, anchor: 'middle' as const },
       { x: x + dDiag, y: y - dDiag + size * 0.28, anchor: 'start' as const },
       { x: x - dDiag, y: y - dDiag + size * 0.28, anchor: 'end' as const },
       { x: x + dDiag, y: y + dDiag + size * 0.28, anchor: 'start' as const },
       { x: x - dDiag, y: y + dDiag + size * 0.28, anchor: 'end' as const },
     ];
+  };
+
+  // Every city dot is an obstacle before any name is placed, so a metropolis ringed by
+  // its own suburbs finds all eight of its close slots taken and loses its name — that
+  // is how a map of Sweden came out with no "Stockholm" on it, while Sundbyberg and
+  // Huddinge kept theirs. Let the cities that matter reach further out for open paper;
+  // the renderer draws a leader line back to the dot once the name sits clear of it.
+  const candidatesFor = (x: number, y: number, r: number, size: number, important: boolean) => {
+    const reaches = important ? [1, 2.6, 4.6, 7.2, 10.5] : [1];
+    return reaches.flatMap((reach) => ringAt(x, y, r, size, reach));
   };
 
   const ranked = cities
@@ -419,8 +532,9 @@ export function layoutLabels(
       continue;
     }
 
+    const important = priority.has(name) || c.pop >= 50000;
     let placed = false;
-    for (const cand of candidatesFor(c.x, c.y, r, size, w)) {
+    for (const cand of candidatesFor(c.x, c.y, r, size, important)) {
       const box = textBox(cand.x, cand.y, w, size, cand.anchor);
       if (box.x0 < bounds.x0 || box.x1 > bounds.x1 || box.y0 < bounds.y0 || box.y1 > bounds.y1) continue;
       if (collides(box, boxes)) continue;

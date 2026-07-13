@@ -436,7 +436,13 @@ export function Artboard({ recipe, data, projected, layout, hillshade, interacti
       case 'airports':
       case 'castles': {
         const glyph = ICON_GLYPHS[l.id];
-        const feats = data.fc[l.id]?.features ?? [];
+        const kinds = l.filters.kinds;
+        const feats = (data.fc[l.id]?.features ?? []).filter((f) => {
+          if (l.id !== 'castles') return true;
+          // data predating the manor/castle split carries no kind — treat it as a castle
+          const kind = (f.properties.kind as string) ?? 'castle';
+          return kinds?.[kind] ?? kind === 'castle';
+        });
         const scale = (l.sizeMm ?? 2.6) / 10;
         const halo = recipe.furniture.halo;
         return (
@@ -561,7 +567,8 @@ export function Artboard({ recipe, data, projected, layout, hillshade, interacti
 
               return (
                 <g key={lab.id}>
-                  {lab.kind === 'city' && lab.overridden && dist > 6 ? (
+                  {/* a name pushed clear of its crowded dot — dragged or auto-placed — needs the tie back */}
+                  {lab.kind === 'city' && dist > 6 ? (
                     <line x1={lab.baseX} y1={lab.baseY} x2={lab.x} y2={lab.y - lab.sizeMm * 0.3} stroke={l.fill} strokeWidth={0.1} opacity={0.5} />
                   ) : null}
                   <text
