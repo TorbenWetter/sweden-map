@@ -72,11 +72,18 @@ for T in print preview; do
     -o format=topojson "$OUT/rivers.$T.json"
 done
 
-# --- roads: dissolve per class → 4 giant features, cheap to render & toggle ---
+# --- roads: drop twinned carriageways, dissolve per class → 4 giant features ---
+# OSM maps each carriageway of a dual carriageway as its own way, so a motorway is
+# drawn twice. Solid strokes hide it, but it inflates the geometry and would break a
+# dashed road style exactly as it broke dashed rail. Dedupe *within* each class: a
+# trunk beside a motorway is a different road and has to survive on its own.
+log "roads: removing twinned carriageways…"
+node "$SRC/dedupe-lines.mjs" "$WORK/roads.geojson" "$WORK/roads-dedup.geojson" 45 0.8 class
+
 for T in print preview; do
   IV=$(tier $T)
   log "roads ($T)…"
-  "$MS" "$WORK/roads.geojson" \
+  "$MS" "$WORK/roads-dedup.geojson" \
     -clip "$WORK/sweden0.geojson" \
     -dissolve fields=class \
     -simplify weighted interval=$IV \
@@ -84,11 +91,17 @@ for T in print preview; do
     -o format=topojson "$OUT/roads.$T.json"
 done
 
-# --- railways: normalize usage, dissolve → 2 features ---
+# --- railways: drop duplicate-course tracks, normalize usage, dissolve → 2 features ---
+# OSM maps each track of a double-track line as its own way. They coincide at poster
+# scale, and two coincident *dashed* strokes fill each other's gaps and read as solid.
+# Deduping also brings the network from 13 300 km of track down to ~10 950 km of route.
+log "railways: removing duplicate-course tracks…"
+node "$SRC/dedupe-lines.mjs" "$WORK/railways.geojson" "$WORK/railways-dedup.geojson" 45 0.8 usage
+
 for T in print preview; do
   IV=$(tier $T)
   log "railways ($T)…"
-  "$MS" "$WORK/railways.geojson" \
+  "$MS" "$WORK/railways-dedup.geojson" \
     -clip "$WORK/sweden0.geojson" \
     -each 'usage=usage||"main"' \
     -dissolve fields=usage \
@@ -143,7 +156,7 @@ log "ferries…"
 
 # --- E-roads: per-route lines for shield placement (refs like "E 4" or "E 4;E 20") ---
 log "e-roads…"
-"$MS" "$WORK/roads.geojson" \
+"$MS" "$WORK/roads-dedup.geojson" \
   -clip "$WORK/sweden0.geojson" \
   -filter 'ref != null && /(^|;)\s*E ?\d+/.test(ref)' \
   -each 'eref="E" + ref.match(/(?:^|;)\s*E ?(\d+)/)[1]' \
@@ -185,13 +198,18 @@ log "icons…"
   -filter-fields name,iata \
   -o format=topojson "$OUT/airports.json"
 
+# A site counts when OSM maps its footprint or cites it (wikidata/wikipedia); a bare,
+# uncited node is as likely to be a cannon as a castle. castle_type splits the manor
+# houses out so a poster can carry the slott without 60 herrgårdar.
 "$MS" "$WORK/castles_poly.geojson" -points -o "$WORK/castles_polypt.geojson"
 "$MS" -i "$WORK/castles_pt.geojson" "$WORK/castles_polypt.geojson" combine-files \
   -merge-layers force \
   -clip "$WORK/sweden0.geojson" \
   -filter 'name != null' \
+  -filter 'mapped_area == 1 || cited == 1' \
+  -each 'kind = castle_type == "manor" ? "manor" : "castle"' \
   -uniq name \
-  -filter-fields name \
+  -filter-fields name,kind \
   -o format=topojson "$OUT/castles.json"
 
 # --- point/line layers without tiers ---

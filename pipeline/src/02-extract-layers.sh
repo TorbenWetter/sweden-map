@@ -75,11 +75,27 @@ X airports_poly "$GPKG" -dialect sqlite -sql \
   "SELECT name, hstore_get_value(other_tags,'iata') AS iata, geom FROM polys_raw
    WHERE aeroway='aerodrome' AND hstore_get_value(other_tags,'iata') IS NOT NULL"
 
+# historic=castle is a broad church: it also covers manor houses, vanished ruins and
+# (verbatim, near Sundsvall) two cannons and a street address. Carry the tags that tell
+# them apart — castle_type splits manor from castle, and a footprint or a Wikidata entry
+# is what separates a real site from a stray node. 04-shape.sh does the filtering.
 X castles_pt "$GPKG" -dialect sqlite -sql \
-  "SELECT name, geom FROM places_raw WHERE hstore_get_value(other_tags,'historic')='castle'"
+  "SELECT name,
+          hstore_get_value(other_tags,'castle_type') AS castle_type,
+          CASE WHEN hstore_get_value(other_tags,'wikidata') IS NOT NULL
+                 OR hstore_get_value(other_tags,'wikipedia') IS NOT NULL THEN 1 ELSE 0 END AS cited,
+          0 AS mapped_area,
+          geom
+   FROM places_raw WHERE hstore_get_value(other_tags,'historic')='castle'"
 
 X castles_poly "$GPKG" -dialect sqlite -sql \
-  "SELECT name, geom FROM polys_raw WHERE historic='castle'"
+  "SELECT name,
+          hstore_get_value(other_tags,'castle_type') AS castle_type,
+          CASE WHEN hstore_get_value(other_tags,'wikidata') IS NOT NULL
+                 OR hstore_get_value(other_tags,'wikipedia') IS NOT NULL THEN 1 ELSE 0 END AS cited,
+          1 AS mapped_area,
+          geom
+   FROM polys_raw WHERE historic='castle'"
 
 X places "$GPKG" -dialect sqlite -sql \
   "SELECT name, place,

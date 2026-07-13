@@ -73,7 +73,10 @@ const trails = fc([
 ]);
 const lighthouses = fc([feat(point(950000, 6440000), { name: 'Testfyren' })]);
 const airports = fc([feat(point(720000, 6560000), { name: 'Test Airport', iata: 'TST' })]);
-const castles = fc([feat(point(500000, 6500000), { name: 'Testslottet' })]);
+const castles = fc([
+  feat(point(500000, 6500000), { name: 'Testslottet', kind: 'castle' }),
+  feat(point(520000, 6480000), { name: 'Testherrgården', kind: 'manor' }),
+]);
 const eroads = fc([
   feat(line([[380000, 6250000], [500000, 6900000], [560000, 7450000]]), { eref: 'E4' }),
 ]);

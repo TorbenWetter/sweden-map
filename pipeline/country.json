@@ -14,10 +14,12 @@
   "frame4326": [2, 53.5, 33, 71.5],
   "graticule": { "lonMin": 4, "lonMax": 32, "latMin": 54, "latMax": 71, "stepDeg": 2, "densifyDeg": 0.25 },
   "dem": { "latMin": 54, "latMax": 69, "lonMin": 3, "lonMax": 31 },
+  "_placePriority": "always shown regardless of population: the 21 county seats, plus Kiruna — without it the whole far north of the poster carries no name",
   "placePriority": [
     "Stockholm", "Göteborg", "Malmö", "Uppsala", "Nyköping", "Linköping", "Jönköping",
     "Växjö", "Kalmar", "Visby", "Karlskrona", "Halmstad", "Vänersborg", "Karlstad",
-    "Örebro", "Västerås", "Falun", "Gävle", "Härnösand", "Östersund", "Umeå", "Luleå"
+    "Örebro", "Västerås", "Falun", "Gävle", "Härnösand", "Östersund", "Umeå", "Luleå",
+    "Kiruna"
   ],
   "seaLabels": [
     { "name": "Östersjön", "lon": 19.1, "lat": 56.6, "angleDeg": -28 },
