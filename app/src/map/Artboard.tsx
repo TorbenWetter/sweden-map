@@ -495,7 +495,9 @@ export function Artboard({ recipe, data, projected, layout, hillshade, interacti
                   {c.capital ? (
                     <circle cx={c.x} cy={c.y} r={r + 0.55} fill="none" stroke={l.fill} strokeWidth={0.28} />
                   ) : null}
-                  <circle cx={c.x} cy={c.y} r={r} fill={l.fill} />
+                  {/* the halo keeps a dot a disc: without it, a dot landing on the rail,
+                      a road or an airport glyph fuses with it into an unreadable blob */}
+                  <circle cx={c.x} cy={c.y} r={r} fill={l.fill} stroke={recipe.furniture.halo} strokeWidth={0.22} paintOrder="stroke" />
                 </g>
               );
             })}
