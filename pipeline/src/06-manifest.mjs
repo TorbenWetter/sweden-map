@@ -10,13 +10,59 @@ const OUT = join(ROOT, 'app', 'public', 'data');
 
 const FRAME = config.frame;
 
+// mapshaper's TopoJSON carries a `transform` but no `bbox`, so reading topo.bbox
+// always yielded null — and swedenBounds silently fell back to the whole data frame,
+// which is ~1.7× wider than the country. Every map was then fitted to the frame:
+// the country came out undersized and the frame's own edge landed inside the paper,
+// leaving bands of bare sea where the terrain and neighbor land stopped. Derive the
+// real extent from the quantized arcs and point geometries instead.
+const bboxOf = (topo) => {
+  const t = topo.transform;
+  const b = [Infinity, Infinity, -Infinity, -Infinity];
+  const see = (qx, qy) => {
+    const x = t ? qx * t.scale[0] + t.translate[0] : qx;
+    const y = t ? qy * t.scale[1] + t.translate[1] : qy;
+    if (x < b[0]) b[0] = x;
+    if (y < b[1]) b[1] = y;
+    if (x > b[2]) b[2] = x;
+    if (y > b[3]) b[3] = y;
+  };
+
+  for (const arc of topo.arcs ?? []) {
+    let x = 0;
+    let y = 0;
+    for (const [dx, dy] of arc) {
+      // with a transform the arcs are delta-encoded; without one they are absolute
+      if (t) {
+        x += dx;
+        y += dy;
+      } else {
+        x = dx;
+        y = dy;
+      }
+      see(x, y);
+    }
+  }
+
+  // point layers (places, castles, …) hold their coordinates inline, not in arcs
+  const walk = (g) => {
+    if (!g) return;
+    if (g.type === 'Point') see(g.coordinates[0], g.coordinates[1]);
+    else if (g.type === 'MultiPoint') for (const c of g.coordinates) see(c[0], c[1]);
+    else if (g.geometries) for (const child of g.geometries) walk(child);
+  };
+  for (const o of Object.values(topo.objects ?? {})) walk(o);
+
+  return Number.isFinite(b[0]) ? b : null;
+};
+
 const info = (file) => {
   const p = join(OUT, file);
   if (!existsSync(p)) return null;
   const topo = JSON.parse(readFileSync(p, 'utf8'));
   const objects = Object.values(topo.objects ?? {});
   const features = objects.reduce((n, o) => n + (o.geometries?.length ?? 0), 0);
-  return { file, bytes: statSync(p).size, features, bbox: topo.bbox ?? null };
+  return { file, bytes: statSync(p).size, features, bbox: topo.bbox ?? bboxOf(topo) };
 };
 
 const tiered = (id, opts = {}) => {
