@@ -8,6 +8,8 @@ import inter400 from '@fontsource/inter/files/inter-latin-400-normal.woff2?url';
 import inter500 from '@fontsource/inter/files/inter-latin-500-normal.woff2?url';
 import inter600 from '@fontsource/inter/files/inter-latin-600-normal.woff2?url';
 import inter700 from '@fontsource/inter/files/inter-latin-700-normal.woff2?url';
+import srgbIccUrl from './srgb.icc?url';
+import { encodeTiff, tagJpeg } from './raster';
 
 export const PRINT_PAYLOAD_KEY = 'sweden-map-studio.print.v1';
 
@@ -106,8 +108,16 @@ export async function exportSvg(recipe: Recipe): Promise<void> {
 /** Browsers refuse to allocate beyond ~2^28 canvas pixels; fail with advice, not a decode error. */
 const MAX_CANVAS_PX = 268_000_000;
 
-/** Rasterize at a chosen dpi via an offscreen canvas. */
-export async function exportPng(recipe: Recipe, dpi: 150 | 300): Promise<void> {
+export type RasterFormat = 'png' | 'jpeg' | 'tiff';
+
+let iccBytes: Uint8Array | null = null;
+async function srgbIcc(): Promise<Uint8Array> {
+  if (!iccBytes) iccBytes = new Uint8Array(await (await fetch(srgbIccUrl)).arrayBuffer());
+  return iccBytes;
+}
+
+/** Paint the poster onto an offscreen canvas at the requested dpi. */
+async function rasterize(recipe: Recipe, dpi: number): Promise<{ canvas: HTMLCanvasElement; w: number; h: number }> {
   const w = Math.round((recipe.paper.wMm / 25.4) * dpi);
   const h = Math.round((recipe.paper.hMm / 25.4) * dpi);
   if (w * h > MAX_CANVAS_PX) {
@@ -131,13 +141,53 @@ export async function exportPng(recipe: Recipe, dpi: 150 | 300): Promise<void> {
     canvas.height = h;
     const ctx = canvas.getContext('2d');
     if (!ctx) throw new Error('canvas 2d context unavailable');
+    // Lay the paper down first. Antialiasing along the sheet edge otherwise leaves
+    // semi-transparent pixels, and a print lab compositing that alpha is a coin toss.
+    ctx.fillStyle = recipe.furniture.frame.show ? recipe.furniture.frame.paper : '#FFFFFF';
+    ctx.fillRect(0, 0, w, h);
     ctx.drawImage(img, 0, 0, w, h);
-    const blob = await new Promise<Blob | null>((res) => canvas.toBlob(res, 'image/png'));
-    if (!blob) throw new Error('PNG encode failed');
-    download(blob, `${slug(recipe.name)}-${dpi}dpi.png`);
+    return { canvas, w, h };
   } finally {
     URL.revokeObjectURL(svgUrl);
   }
+}
+
+/**
+ * Rasterize at a chosen dpi. TIFF and JPEG carry the print resolution and an sRGB
+ * profile, because that is what a print lab wants and what a canvas will not give you:
+ * WhiteWall and the like reject PNG for wall art outright.
+ */
+export async function exportRaster(recipe: Recipe, dpi: 150 | 300, format: RasterFormat): Promise<void> {
+  const { canvas, w, h } = await rasterize(recipe, dpi);
+  const name = `${slug(recipe.name)}-${recipe.paper.wMm}x${recipe.paper.hMm}mm-${dpi}dpi`;
+
+  if (format === 'png') {
+    const blob = await new Promise<Blob | null>((res) => canvas.toBlob(res, 'image/png'));
+    if (!blob) throw new Error('PNG encode failed');
+    download(blob, `${name}.png`);
+    return;
+  }
+
+  const icc = await srgbIcc();
+
+  if (format === 'jpeg') {
+    // 0.97 keeps the hairlines clean; below ~0.9 browsers also drop to 4:2:0 chroma,
+    // which is exactly what smears a red hairline on a pale ground
+    const blob = await new Promise<Blob | null>((res) => canvas.toBlob(res, 'image/jpeg', 0.97));
+    if (!blob) throw new Error('JPEG encode failed');
+    download(await tagJpeg(blob, dpi, icc), `${name}.jpg`);
+    return;
+  }
+
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('canvas 2d context unavailable');
+  const { data } = ctx.getImageData(0, 0, w, h);
+  download(await encodeTiff(data, w, h, dpi, icc), `${name}.tif`);
+}
+
+/** @deprecated kept for the existing tests/callers */
+export async function exportPng(recipe: Recipe, dpi: 150 | 300): Promise<void> {
+  return exportRaster(recipe, dpi, 'png');
 }
 
 /** Open the print route; the browser's print dialog produces a vector PDF at exact size. */

@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { useStudio } from '../state/store';
-import { exportPng, exportRecipeFile, exportSvg, openPrint } from '../export/export';
+import { exportRaster, exportRecipeFile, exportSvg, openPrint } from '../export/export';
 import { PresetPicker } from './PresetPicker';
 import type { Recipe } from '../types';
 
@@ -92,10 +92,16 @@ export function TopBar() {
             <button onClick={() => { setExportOpen(false); openPrint(recipe); }}>
               PDF — print dialog<span>exact size, vector, for the print shop</span>
             </button>
-            <button onClick={() => run('PNG 300', () => exportPng(recipe, 300))}>
-              PNG — 300 dpi<span>raster proof / online print services</span>
+            <button onClick={() => run('TIFF 300', () => exportRaster(recipe, 300, 'tiff'))}>
+              TIFF — 300 dpi<span>print labs (WhiteWall et al.) — 8-bit, sRGB embedded</span>
             </button>
-            <button onClick={() => run('PNG 150', () => exportPng(recipe, 150))}>
+            <button onClick={() => run('JPEG 300', () => exportRaster(recipe, 300, 'jpeg'))}>
+              JPEG — 300 dpi<span>same, smaller; quality 97, sRGB embedded</span>
+            </button>
+            <button onClick={() => run('PNG 300', () => exportRaster(recipe, 300, 'png'))}>
+              PNG — 300 dpi<span>raster proof — labs often reject PNG</span>
+            </button>
+            <button onClick={() => run('PNG 150', () => exportRaster(recipe, 150, 'png'))}>
               PNG — 150 dpi<span>quick share</span>
             </button>
           </div>
